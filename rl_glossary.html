@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RL Glossary — Reinforcement Learning Terms</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f7f6f3;
+    --border: #e0ddd6;
+    --border2: #ccc9c0;
+    --border3: #b8b5ae;
+    --text: #1a1916;
+    --text2: #6b6960;
+    --text3: #9c9a91;
+    --radius: 10px;
+    --font: 'Sora', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 48px 32px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  header { margin-bottom: 36px; border-bottom: 1px solid var(--border); padding-bottom: 28px; }
+  .tag { font-size: 11px; font-family: var(--mono); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+  h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+  h1 span { color: var(--text3); }
+  .subtitle { margin-top: 10px; font-size: 15px; color: var(--text2); line-height: 1.6; }
+
+  .controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+
+  input[type=text] {
+    width: 100%; font-size: 14px; font-family: var(--font);
+    padding: 10px 14px; border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text);
+    transition: border-color 0.15s;
+  }
+  input[type=text]:focus { outline: none; border-color: var(--border3); }
+
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    font-size: 12px; font-family: var(--font); font-weight: 500;
+    padding: 5px 14px; border-radius: 99px;
+    border: 1px solid var(--border2);
+    background: var(--bg); color: var(--text2);
+    cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s;
+    user-select: none;
+  }
+  .chip:hover { border-color: var(--border3); color: var(--text); }
+  .chip.active { background: var(--text); color: white; border-color: var(--text); }
+
+  .count { font-size: 12px; color: var(--text3); font-family: var(--mono); margin-bottom: 14px; }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .card:hover { border-color: var(--border2); }
+  .card.open { border-color: var(--border3); }
+
+  .card-header {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 14px 16px; cursor: pointer;
+    background: var(--bg);
+    user-select: none;
+  }
+  .card.open .card-header { background: var(--bg2); }
+
+  .symbol {
+    font-family: var(--mono); font-size: 15px; font-weight: 500;
+    color: var(--text); min-width: 110px; flex-shrink: 0;
+  }
+  .term-name { font-size: 13px; color: var(--text2); flex: 1; }
+
+  .badge {
+    font-size: 11px; font-weight: 500; padding: 3px 10px;
+    border-radius: 99px; white-space: nowrap; flex-shrink: 0;
+  }
+  .badge-core   { background: #E6F1FB; color: #0C447C; }
+  .badge-mc     { background: #EAF3DE; color: #27500A; }
+  .badge-td     { background: #FAEEDA; color: #633806; }
+  .badge-policy { background: #EEEDFE; color: #3C3489; }
+  .badge-env    { background: #F1EFE8; color: #444441; }
+
+  .chevron {
+    margin-left: auto; font-size: 12px; color: var(--text3);
+    transition: transform 0.2s; flex-shrink: 0;
+  }
+  .card.open .chevron { transform: rotate(180deg); }
+
+  .card-body {
+    padding: 0 16px; max-height: 0; overflow: hidden;
+    transition: max-height 0.25s ease, padding 0.2s;
+    background: var(--bg);
+    border-top: 0 solid var(--border);
+  }
+  .card.open .card-body {
+    max-height: 400px; padding: 14px 16px;
+    border-top-width: 1px;
+  }
+
+  .short {
+    font-size: 14px; font-weight: 500; color: var(--text);
+    margin-bottom: 10px; line-height: 1.5;
+  }
+  .long { font-size: 13px; color: var(--text2); line-height: 1.7; }
+  .long code {
+    font-family: var(--mono); font-size: 12px;
+    background: var(--bg2); padding: 1px 5px;
+    border-radius: 4px; color: var(--text);
+  }
+
+  .empty { text-align: center; padding: 40px; color: var(--text3); font-size: 14px; }
+
+  footer {
+    margin-top: 48px; padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text3); font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">Reference · Reinforcement Learning</div>
+  <h1>RL Glossary <span>/ Key Terms Explained</span></h1>
+  <p class="subtitle">24 core terms from Q-learning, Monte Carlo, PPO, and policy methods. Click any card to expand.</p>
+</header>
+
+<div class="controls">
+  <input type="text" id="search" placeholder="Search terms…" oninput="filter()">
+  <div class="chips" id="chips">
+    <div class="chip active" data-cat="all" onclick="setChip(this)">All</div>
+    <div class="chip" data-cat="core" onclick="setChip(this)">Core concepts</div>
+    <div class="chip" data-cat="env" onclick="setChip(this)">Environment</div>
+    <div class="chip" data-cat="td" onclick="setChip(this)">TD / Q-learning</div>
+    <div class="chip" data-cat="mc" onclick="setChip(this)">Monte Carlo</div>
+    <div class="chip" data-cat="policy" onclick="setChip(this)">Policy</div>
+  </div>
+</div>
+
+<div class="count" id="count"></div>
+<div id="cards"></div>
+
+<footer>
+  Covers: Sutton &amp; Barto (2018) · Watkins &amp; Dayan (1992) · Mnih et al. (2015)
+</footer>
+
+<script>
+const terms = [
+  {
+    symbol: "s",
+    name: "State",
+    cat: "env",
+    short: "A snapshot of the environment at one moment in time.",
+    long: "Everything the agent can observe right now — the board position in chess, the agent's grid location, the pixels on screen. The agent uses s to decide what action to take next. The full set of possible states is called the state space."
+  },
+  {
+    symbol: "s'",
+    name: "Next state",
+    cat: "env",
+    short: "The state the agent lands in after taking an action.",
+    long: "After the agent takes action a from state s, the environment transitions to s'. In the Bellman equation, s' represents the 'future' the agent is trying to evaluate. In stochastic environments, s' may not be fully predictable — the same action from the same state can lead to different outcomes."
+  },
+  {
+    symbol: "a",
+    name: "Action",
+    cat: "core",
+    short: "A choice the agent makes at each timestep.",
+    long: "The complete set of possible actions is called the action space. In a grid world: up / down / left / right. In chess: any legal move. Actions can be discrete (a finite list of choices) or continuous (a value along a spectrum, like steering angle). The agent selects one action per state based on its policy."
+  },
+  {
+    symbol: "r",
+    name: "Reward",
+    cat: "core",
+    short: "The immediate signal the environment returns after each action.",
+    long: "r is a scalar number — positive, negative, or zero. It is the environment's instant feedback for that specific action. The agent's overall goal is to maximise cumulative reward over time, not just the next single r. The design of the reward function is one of the most important and tricky parts of building an RL system."
+  },
+  {
+    symbol: "G",
+    name: "Return",
+    cat: "mc",
+    short: "Total discounted reward accumulated from a step to the end of the episode.",
+    long: "G = r₁ + γr₂ + γ²r₃ + … This is what Monte Carlo methods use to update. It captures the real cumulative payoff with no estimates — only what actually happened. The trade-off: G is unbiased (no approximation error) but high variance, because a single lucky or unlucky episode can shift G dramatically."
+  },
+  {
+    symbol: "γ",
+    name: "Discount factor",
+    cat: "core",
+    short: "How much the agent values future rewards relative to immediate ones.",
+    long: "A number between 0 and 1. γ = 0.9 means a reward 10 steps away is worth only 0.9¹⁰ ≈ 35% of the same reward received now. γ = 1 means the agent is perfectly patient and treats all future rewards equally. γ = 0 means it is completely short-sighted and only cares about the very next reward. In practice, γ is typically set between 0.9 and 0.99."
+  },
+  {
+    symbol: "α",
+    name: "Learning rate",
+    cat: "core",
+    short: "How large a step the agent takes toward new information on each update.",
+    long: "α controls how much each update shifts the current estimate. α = 1 means completely replace the old estimate with the new one. α = 0.1 means nudge it 10% toward the new estimate and keep 90% of the old one. Too high → unstable, oscillates. Too low → learns very slowly. Often decayed over training as the agent becomes more confident."
+  },
+  {
+    symbol: "V(s)",
+    name: "State value",
+    cat: "td",
+    short: "Expected total return from state s, following the current policy.",
+    long: "V(s) answers the question: 'If I am in state s and play from here using my current policy, how much total reward do I expect?' It is an average over all possible futures. TD methods update V(s) by using V(s') as a proxy for those futures, without needing to wait for the episode to end."
+  },
+  {
+    symbol: "Q(s, a)",
+    name: "Action value",
+    cat: "td",
+    short: "Expected return from taking action a in state s, then playing optimally.",
+    long: "This is what the Q-table stores — one value per (state, action) pair. Q is more directly useful than V because it tells you which specific action is best, not just how good the state is in general. Once the Q-table is accurate, the best action from any state s is simply: argmax_a Q(s, a) — pick whichever action has the highest Q-value."
+  },
+  {
+    symbol: "TD error (δ)",
+    name: "Temporal difference error",
+    cat: "td",
+    short: "The gap between what the agent expected and what it actually observed.",
+    long: "δ = r + γ · V(s') − V(s). This is the 'surprise signal'. If you expected a state to be worth 0.5 but the next state looks worth 0.8, δ is positive — update upward. If reality looks worse than expected, δ is negative — update downward. The whole learning process is the agent continuously chasing δ → 0 across all states."
+  },
+  {
+    symbol: "π(s)",
+    name: "Policy",
+    cat: "policy",
+    short: "The agent's decision rule — what action to take in each state.",
+    long: "A policy maps states to actions. It can be deterministic (always take action a in state s) or stochastic (take action a with 70% probability). Finding a good policy is the core objective of all RL. In Q-learning, the policy is implicit: just always pick argmax_a Q(s, a)."
+  },
+  {
+    symbol: "π*",
+    name: "Optimal policy",
+    cat: "policy",
+    short: "The best possible policy — maximises expected return from every state.",
+    long: "π* is what every RL algorithm is ultimately trying to find. Once you have an accurate Q-table, π* is trivial to derive: pick argmax_a Q(s, a) at every state. The hard part is getting the Q-table to be accurate enough in the first place — which requires sufficient exploration and many training episodes."
+  },
+  {
+    symbol: "ε-greedy",
+    name: "Epsilon-greedy",
+    cat: "policy",
+    short: "Explore randomly with probability ε, exploit the best known action otherwise.",
+    long: "This handles the exploration-exploitation trade-off. If the agent always picks the best known action, it never discovers potentially better ones it hasn't tried. ε-greedy randomly picks any action ε% of the time. ε is often annealed over training — starting high (lots of exploration early) and gradually decaying toward near-zero as the Q-table matures."
+  },
+  {
+    symbol: "bootstrapping",
+    name: "Bootstrapping",
+    cat: "td",
+    short: "Using your own estimates to update your own estimates.",
+    long: "TD methods don't wait for the real final outcome — they use V(s'), which is itself an estimate, to update V(s). This is bootstrapping: updating a guess using another guess. It introduces bias (estimates are wrong early in training) but dramatically reduces variance compared to Monte Carlo, allowing learning to happen step-by-step without completing full episodes."
+  },
+  {
+    symbol: "episode",
+    name: "Episode",
+    cat: "env",
+    short: "One complete run from the start state to a terminal state.",
+    long: "One game of chess, one traversal of a grid, one lap of a race track. Monte Carlo methods require complete episodes before updating, because they need the final outcome G. TD methods can learn mid-episode. Tasks with no natural end point (continuous control, algorithmic trading) are called continuing tasks and require special handling."
+  },
+  {
+    symbol: "Bellman eq.",
+    name: "Bellman equation",
+    cat: "td",
+    short: "The recursive relationship between a state's value and its neighbours'.",
+    long: "V(s) = r + γ · max_a V(s'). The value of a state equals the immediate reward plus the discounted value of the best reachable next state. Q-learning is essentially solving this equation iteratively across all states. Named after mathematician Richard Bellman, who derived it in the 1950s. The core insight: optimal values are self-consistent — they satisfy this equation exactly."
+  },
+  {
+    symbol: "credit assign.",
+    name: "Credit assignment",
+    cat: "mc",
+    short: "Which past action actually caused this outcome?",
+    long: "The fundamental hard problem of RL. Did step 3 or step 47 cause the eventual win? Monte Carlo uses temporal distance as a rough proxy — earlier actions get less credit because G is discounted. TD uses bootstrapped value differences at each step. Eligibility traces (TD-λ) are a middle-ground: actions leave a fading 'trace' that lets credit propagate more intelligently backward through time."
+  },
+  {
+    symbol: "PPO",
+    name: "Proximal Policy Optimisation",
+    cat: "policy",
+    short: "A policy gradient algorithm that clips updates to prevent catastrophic changes.",
+    long: "PPO improves the policy by maximising expected reward, but constrains how much the policy can change in a single update: L = min(r(θ)·A, clip(r(θ), 1±ε)·A). Here r(θ) is the ratio of new to old action probabilities, A is the advantage, and ε (typically 0.2) is the clip range. Without clipping, a single bad update can collapse a policy that took millions of steps to learn. PPO is the default algorithm in Unity ML-Agents and one of the most widely used RL algorithms in practice."
+  },
+  {
+    symbol: "A (advantage)",
+    name: "Advantage estimate",
+    cat: "td",
+    short: "How much better was this action than the average action from this state?",
+    long: "A(s, a) = Q(s, a) − V(s). If A is positive, this action was better than expected — reinforce it. If negative, it was worse — suppress it. Using advantage instead of raw reward reduces variance dramatically, because you're only updating based on the surprise relative to baseline, not the absolute reward magnitude. PPO, A3C, and most modern policy gradient methods optimise the advantage signal rather than raw returns."
+  },
+  {
+    symbol: "reward shaping",
+    name: "Reward shaping",
+    cat: "core",
+    short: "Manually adding intermediate rewards to guide learning toward the goal.",
+    long: "Sparse rewards (only +1 at the very end) are brutally hard to learn from — the agent has to stumble onto the goal by chance before it gets any signal. Reward shaping adds informative intermediate rewards: a small penalty per step (−0.0025) discourages dawdling, a bonus for getting closer to the goal guides direction. Done carefully it speeds learning dramatically. Done badly it creates unintended shortcuts — the agent optimises the shaped reward instead of the true goal (reward hacking)."
+  },
+  {
+    symbol: "continuous / discrete",
+    name: "Continuous vs Discrete actions",
+    cat: "core",
+    short: "Whether the agent picks from a finite list or outputs a real-valued number.",
+    long: "Discrete actions are categorical choices from a fixed menu: move forward, rotate left, grasp. Simple to implement, and the policy outputs a probability distribution over the options. Continuous actions are real numbers in a range (typically [−1, 1]): joint torque, steering angle, force magnitude. More expressive but harder to train — the policy must output a mean and variance for a Gaussian distribution over each action dimension. Mixing both is possible: ML-Agents supports hybrid action spaces."
+  },
+  {
+    symbol: "action masking",
+    name: "Action masking",
+    cat: "policy",
+    short: "Blocking provably invalid actions before the policy even considers them.",
+    long: "For discrete action spaces, some actions may be illegal or physically impossible in certain states. Rather than letting the agent waste exploration trying them and receiving penalties, action masking zeroes out those options in the probability distribution before sampling. Example: if a raycast detects a wall directly ahead, mask the 'move forward' action. The agent never wastes a step walking into walls. This speeds training and can encode hard constraints the reward function cannot easily express."
+  },
+  {
+    symbol: "sim-to-real",
+    name: "Sim-to-real gap",
+    cat: "env",
+    short: "The performance drop when a policy trained in simulation is deployed on real hardware.",
+    long: "Simulation is a simplified approximation of reality. Sensors are perfect and instantaneous, physics is idealized, and contact dynamics are approximate. A policy that exploits these simulation shortcuts often fails on real hardware where sensors are noisy, latency exists, and friction is unpredictable. Bridging this gap is one of the central challenges of physical AI. The main mitigation strategies are domain randomisation, system identification, and sim-to-real transfer learning."
+  },
+  {
+    symbol: "domain rand.",
+    name: "Domain randomisation",
+    cat: "env",
+    short: "Randomising simulation parameters during training so the policy learns to generalise.",
+    long: "Rather than training on one fixed simulation, domain randomisation varies physics parameters — friction, mass, sensor noise, object appearance, lighting — across episodes. The policy is forced to learn behaviour that works across a wide distribution of environments, rather than exploiting specific simulation constants. When deployed on the real world, the real environment is treated as just another sample from that distribution. First demonstrated effectively by OpenAI training a Rubik's Cube-solving robot hand entirely in simulation."
+  }
+];
+
+const badgeClass = { core:'badge-core', mc:'badge-mc', td:'badge-td', policy:'badge-policy', env:'badge-env' };
+const badgeLabel = { core:'Core', mc:'Monte Carlo', td:'TD / Q-learning', policy:'Policy', env:'Environment' };
+
+let activeCat = 'all';
+let openCards = new Set();
+
+function render(list) {
+  const container = document.getElementById('cards');
+  container.innerHTML = '';
+  document.getElementById('count').textContent = `${list.length} term${list.length !== 1 ? 's' : ''}`;
+
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty">No terms match your search.</div>';
+    return;
+  }
+
+  list.forEach(t => {
+    const id = 'card-' + t.symbol.replace(/[^a-z0-9]/gi, '_');
+    const isOpen = openCards.has(t.symbol);
+
+    const card = document.createElement('div');
+    card.className = 'card' + (isOpen ? ' open' : '');
+    card.id = id;
+
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="symbol">${t.symbol}</span>
+        <span class="term-name">${t.name}</span>
+        <span class="badge ${badgeClass[t.cat]}">${badgeLabel[t.cat]}</span>
+        <span class="chevron">&#9660;</span>
+      </div>
+      <div class="card-body">
+        <div class="short">${t.short}</div>
+        <div class="long">${t.long}</div>
+      </div>`;
+
+    card.querySelector('.card-header').addEventListener('click', () => toggle(id, t.symbol));
+    container.appendChild(card);
+  });
+}
+
+function toggle(id, symbol) {
+  const card = document.getElementById(id);
+  const isOpen = card.classList.contains('open');
+  card.classList.toggle('open', !isOpen);
+  if (isOpen) openCards.delete(symbol);
+  else openCards.add(symbol);
+}
+
+function setChip(el) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  activeCat = el.dataset.cat;
+  filter();
+}
+
+function filter() {
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const list = terms.filter(t => {
+    const matchCat = activeCat === 'all' || t.cat === activeCat;
+    const matchQ = !q ||
+      t.symbol.toLowerCase().includes(q) ||
+      t.name.toLowerCase().includes(q) ||
+      t.short.toLowerCase().includes(q) ||
+      t.long.toLowerCase().includes(q);
+    return matchCat && matchQ;
+  });
+  render(list);
+}
+
+filter();
+</script>
+</body>
+</html>
