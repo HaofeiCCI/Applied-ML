@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Q-Learning — Q-Table Interactive Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f7f6f3;
+    --border: #e0ddd6;
+    --border2: #ccc9c0;
+    --text: #1a1916;
+    --text2: #6b6960;
+    --text3: #9c9a91;
+    --amber: #BA7517;
+    --blue-bg: #E6F1FB;
+    --blue-text: #0C447C;
+    --green-bg: #EAF3DE;
+    --red-bg: #FCEBEB;
+    --radius: 10px;
+    --font: 'Sora', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 48px 32px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  header { margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 28px; }
+  .tag { font-size: 11px; font-family: var(--mono); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+  h1 { font-size: 32px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+  h1 span { color: var(--text3); }
+  .subtitle { margin-top: 10px; font-size: 15px; color: var(--text2); line-height: 1.6; }
+
+  .main-layout { display: grid; grid-template-columns: auto 1fr; gap: 40px; align-items: start; }
+
+  .section-label {
+    font-size: 11px; font-family: var(--mono); font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3);
+    margin-bottom: 12px;
+  }
+
+  #grid { display: grid; grid-template-columns: repeat(4, 80px); gap: 6px; }
+
+  .grid-cell {
+    width: 80px; height: 80px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; position: relative;
+    background: var(--bg2);
+    transition: border-color 0.15s, background 0.2s;
+    font-size: 28px; user-select: none;
+  }
+  .grid-cell:hover { border-color: var(--border2); }
+  .grid-cell.agent { background: var(--blue-bg); border-color: #B5D4F4; }
+  .grid-cell.goal  { background: var(--green-bg); border-color: #C0DD97; }
+  .grid-cell.trap  { background: var(--red-bg);   border-color: #F7C1C1; }
+  .cell-arrow { position: absolute; bottom: 4px; right: 6px; font-size: 13px; opacity: 0.5; }
+  .cell-label { position: absolute; top: 4px; left: 6px; font-size: 10px; font-family: var(--mono); color: var(--text3); }
+
+  .controls { margin-top: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  .slider-row label { font-size: 13px; color: var(--text2); min-width: 120px; font-family: var(--mono); }
+  .slider-row input[type=range] { flex: 1; accent-color: var(--text); cursor: pointer; }
+  .slider-val { font-size: 13px; font-family: var(--mono); font-weight: 500; min-width: 32px; text-align: right; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
+  button {
+    font-family: var(--font); font-size: 13px; font-weight: 500;
+    padding: 8px 18px; border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: var(--bg); color: var(--text);
+    cursor: pointer; transition: background 0.15s, border-color 0.15s;
+  }
+  button:hover { background: var(--bg2); border-color: var(--text3); }
+  button.primary { background: var(--text); color: white; border-color: var(--text); }
+  button.primary:hover { background: #333; }
+  button.running { background: #639922; color: white; border-color: #639922; }
+
+  table.qtable { border-collapse: collapse; width: 100%; }
+  .qtable th {
+    font-size: 12px; font-family: var(--mono); font-weight: 500;
+    color: var(--text3); padding: 8px 10px; text-align: center;
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  .qtable th:first-child { text-align: left; }
+  .qtable td {
+    padding: 7px 10px; text-align: center;
+    border: 1px solid var(--border);
+    font-size: 14px; font-family: var(--mono);
+    transition: background 0.3s, color 0.3s; white-space: nowrap;
+  }
+  .qtable td:first-child {
+    text-align: left; font-family: var(--mono); font-size: 12px;
+    color: var(--text2); background: var(--bg2); font-weight: 500;
+  }
+
+  .q-hot  { background: #FAEEDA; color: #633806; font-weight: 500; }
+  .q-warm { background: #FFF8EC; color: #854F0B; }
+  .q-neg  { background: #FFF0F0; color: #A32D2D; }
+  .q-zero { background: var(--bg); color: var(--text3); }
+  .best-q { background: #FAEEDA !important; color: #412402 !important; font-weight: 500; }
+  .active-state td:first-child { background: var(--blue-bg) !important; color: var(--blue-text) !important; }
+  .active-state td { border-color: #B5D4F4; }
+
+  @keyframes flash { 0%{background:#FAC775;color:#2a1500} 100%{} }
+  .update-flash { animation: flash 0.7s ease-out; }
+
+  .formula-box {
+    margin-top: 28px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 22px; font-family: var(--mono); font-size: 15px; line-height: 2;
+  }
+  .formula-box .hl { color: var(--text); font-weight: 500; }
+  .formula-box .changed { color: var(--amber); font-weight: 500; }
+  .formula-box .hint { font-size: 12px; color: var(--text3); margin-top: 4px; display: block; font-family: var(--font); }
+
+  .log-box {
+    margin-top: 20px; border: 1px solid var(--border);
+    border-radius: var(--radius); max-height: 130px; overflow-y: auto; background: var(--bg2);
+  }
+  .log-entry { font-size: 12px; font-family: var(--mono); color: var(--text2); padding: 7px 14px; border-bottom: 1px solid var(--border); }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry .step-num { color: var(--text3); }
+  .log-entry .highlight { color: var(--amber); }
+
+  .stats-bar {
+    display: flex; gap: 24px; flex-wrap: wrap;
+    margin-top: 20px; padding: 14px 18px;
+    background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-label { font-size: 11px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat-val { font-size: 20px; font-weight: 600; font-family: var(--mono); color: var(--text); }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text3); font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">Reinforcement Learning</div>
+  <h1>Q-Learning <span>/ How the Q-Table Works</span></h1>
+  <p class="subtitle">Click an adjacent cell to move the agent and watch Q-values update in real time. Or hit Auto-step and let it learn on its own.</p>
+</header>
+
+<div class="stats-bar">
+  <div class="stat"><span class="stat-label">Steps</span><span class="stat-val" id="stat-steps">0</span></div>
+  <div class="stat"><span class="stat-label">Current state</span><span class="stat-val" id="stat-state">S0</span></div>
+  <div class="stat"><span class="stat-label">Last reward</span><span class="stat-val" id="stat-reward">—</span></div>
+  <div class="stat"><span class="stat-label">Total reward</span><span class="stat-val" id="stat-total">0.0</span></div>
+</div>
+
+<div class="main-layout" style="margin-top: 28px;">
+
+  <div>
+    <div class="section-label">Grid World</div>
+    <div id="grid"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#EAF3DE;border:1px solid #C0DD97"></div>Goal +10</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#FCEBEB;border:1px solid #F7C1C1"></div>Trap −5</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#E6F1FB;border:1px solid #B5D4F4"></div>Agent</div>
+    </div>
+    <div class="controls">
+      <div class="slider-row">
+        <label>α  learning rate</label>
+        <input type="range" min="1" max="10" value="3" id="lr-slider">
+        <span class="slider-val" id="lr-val">0.3</span>
+      </div>
+      <div class="slider-row">
+        <label>γ  discount</label>
+        <input type="range" min="1" max="10" value="9" id="gamma-slider">
+        <span class="slider-val" id="gamma-val">0.9</span>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="primary" id="auto-btn" onclick="toggleAuto()">▶ Auto-step</button>
+      <button onclick="randomStep()">Single step</button>
+      <button onclick="resetAll()">Reset</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="section-label">Q-Table — Q(state, action)</div>
+    <table class="qtable">
+      <thead>
+        <tr>
+          <th>State</th>
+          <th>⬆ Up</th><th>⬇ Down</th><th>⬅ Left</th><th>➡ Right</th>
+        </tr>
+      </thead>
+      <tbody id="qtbody"></tbody>
+    </table>
+    <div style="margin-top:8px; font-size:11px; color:var(--text3); font-family:var(--mono);">
+      Orange = best action per state &nbsp;·&nbsp; Flash = just updated
+    </div>
+  </div>
+</div>
+
+<div class="formula-box" id="formula-box">
+  <span class="hl">Q(s, a)</span> ← Q(s, a) + α · [ r + γ · max Q(s', a') − Q(s, a) ]
+  <span class="hint">Click an adjacent cell to move the agent, or hit Auto-step to start learning</span>
+</div>
+
+<div style="margin-top: 20px;">
+  <div class="section-label">Update log</div>
+  <div class="log-box" id="log">
+    <div class="log-entry" style="color:var(--text3)">— no entries yet —</div>
+  </div>
+</div>
+
+<footer>
+  Q-Learning introduced by Watkins &amp; Dayan, 1992 &nbsp;·&nbsp; Simplified 3×4 grid demo &nbsp;·&nbsp; Each step −0.1 · goal +10 · trap −5
+</footer>
+
+<script>
+const ROWS = 3, COLS = 4, GOAL = 11, TRAP = 7;
+const ACTIONS = ['up','down','left','right'];
+const SYM = { up:'⬆', down:'⬇', left:'⬅', right:'➡' };
+
+let Q = {}, agentPos = 0, stepCount = 0, totalReward = 0, autoTimer = null;
+
+function initQ() {
+  Q = {};
+  for (let s = 0; s < ROWS * COLS; s++)
+    Q[s] = { up: 0, down: 0, left: 0, right: 0 };
+}
+
+function getNext(s, a) {
+  let r = Math.floor(s / COLS), c = s % COLS;
+  if (a === 'up')    r = Math.max(0, r - 1);
+  if (a === 'down')  r = Math.min(ROWS - 1, r + 1);
+  if (a === 'left')  c = Math.max(0, c - 1);
+  if (a === 'right') c = Math.min(COLS - 1, c + 1);
+  return r * COLS + c;
+}
+
+function maxQ(s) { return Math.max(...ACTIONS.map(a => Q[s][a])); }
+function bestAction(s) { return ACTIONS.reduce((b, a) => Q[s][a] > Q[s][b] ? a : b, ACTIONS[0]); }
+function getParams() {
+  return {
+    alpha: parseInt(document.getElementById('lr-slider').value) / 10,
+    gamma: parseInt(document.getElementById('gamma-slider').value) / 10
+  };
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  for (let s = 0; s < ROWS * COLS; s++) {
+    const cell = document.createElement('div');
+    cell.className = 'grid-cell';
+    if (s === GOAL) cell.classList.add('goal');
+    else if (s === TRAP) cell.classList.add('trap');
+    else if (s === agentPos) cell.classList.add('agent');
+
+    const lbl = document.createElement('div');
+    lbl.className = 'cell-label';
+    lbl.textContent = `S${s}`;
+    cell.appendChild(lbl);
+
+    const emoji = s === agentPos ? '🤖' : s === GOAL ? '🏆' : s === TRAP ? '🔥' : '';
+    if (emoji) cell.appendChild(Object.assign(document.createElement('span'), { textContent: emoji }));
+
+    if (s !== GOAL && s !== TRAP && maxQ(s) > 0) {
+      const arr = document.createElement('div');
+      arr.className = 'cell-arrow';
+      arr.textContent = SYM[bestAction(s)];
+      cell.appendChild(arr);
+    }
+
+    if (s !== GOAL && s !== TRAP) {
+      cell.onclick = () => {
+        const dr = Math.floor(s / COLS) - Math.floor(agentPos / COLS);
+        const dc = (s % COLS) - (agentPos % COLS);
+        if (Math.abs(dr) + Math.abs(dc) === 1) {
+          takeStep(dr===1?'down':dr===-1?'up':dc===1?'right':'left');
+        }
+      };
+    }
+    grid.appendChild(cell);
+  }
+  document.getElementById('stat-state').textContent = `S${agentPos}`;
+}
+
+function qClass(v) {
+  if (v >= 5) return 'q-hot';
+  if (v >= 0.5) return 'q-warm';
+  if (v < 0) return 'q-neg';
+  return 'q-zero';
+}
+
+function renderTable(updatedState, updatedAction) {
+  const tbody = document.getElementById('qtbody');
+  tbody.innerHTML = '';
+  for (let s = 0; s < ROWS * COLS; s++) {
+    const tr = document.createElement('tr');
+    if (s === agentPos) tr.classList.add('active-state');
+    const ba = bestAction(s);
+    const hasNonZero = ACTIONS.some(a => Q[s][a] !== 0);
+    const stateTd = document.createElement('td');
+    stateTd.innerHTML = `S${s} <span style="font-weight:400;color:var(--text3)">(${Math.floor(s/COLS)},${s%COLS})</span>`;
+    tr.appendChild(stateTd);
+    for (const a of ACTIONS) {
+      const td = document.createElement('td');
+      td.textContent = Q[s][a].toFixed(1);
+      td.className = qClass(Q[s][a]);
+      if (hasNonZero && a === ba) td.classList.add('best-q');
+      if (s === updatedState && a === updatedAction) td.classList.add('update-flash');
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+}
+
+function takeStep(action) {
+  const s = agentPos;
+  const sPrime = getNext(s, action);
+  if (s === sPrime) return;
+  const r = sPrime === GOAL ? 10 : sPrime === TRAP ? -5 : -0.1;
+  const { alpha, gamma } = getParams();
+  const oldQ = Q[s][action];
+  const maxNext = (sPrime === GOAL || sPrime === TRAP) ? 0 : maxQ(sPrime);
+  const tdError = r + gamma * maxNext - oldQ;
+  Q[s][action] = Math.round((oldQ + alpha * tdError) * 100) / 100;
+  totalReward = Math.round((totalReward + r) * 100) / 100;
+  stepCount++;
+
+  document.getElementById('stat-steps').textContent = stepCount;
+  document.getElementById('stat-reward').textContent = (r > 0 ? '+' : '') + r.toFixed(1);
+  document.getElementById('stat-reward').style.color = r > 0 ? '#3B6D11' : r < 0 ? '#A32D2D' : 'var(--text)';
+  document.getElementById('stat-total').textContent = totalReward.toFixed(1);
+
+  document.getElementById('formula-box').innerHTML =
+    `<span class="hl">Q(S${s}, ${SYM[action]})</span> ← ` +
+    `${oldQ.toFixed(2)} + <span class="changed">${alpha}</span> · ` +
+    `[ <span class="changed">${r.toFixed(1)}</span> + ` +
+    `<span class="changed">${gamma}</span> · ${maxNext.toFixed(2)} − ${oldQ.toFixed(2)} ] = ` +
+    `<span class="changed">${Q[s][action].toFixed(2)}</span>` +
+    `<span class="hint">TD error = ${tdError.toFixed(3)} &nbsp;·&nbsp; update = ${(alpha * tdError).toFixed(3)}</span>`;
+
+  const log = document.getElementById('log');
+  if (log.children.length === 1 && log.children[0].style.color === 'var(--text3)') log.innerHTML = '';
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.innerHTML =
+    `<span class="step-num">#${stepCount}</span>  S${s} ${SYM[action]} → S${sPrime}` +
+    `  r=<span class="highlight">${r >= 0 ? '+' : ''}${r.toFixed(1)}</span>` +
+    `  Q(S${s},${SYM[action]}): ${oldQ.toFixed(2)} → <span class="highlight">${Q[s][action].toFixed(2)}</span>`;
+  log.prepend(entry);
+  if (log.children.length > 12) log.removeChild(log.lastChild);
+
+  agentPos = sPrime;
+  if (sPrime === GOAL || sPrime === TRAP) {
+    setTimeout(() => { agentPos = 0; renderGrid(); renderTable(s, action); }, 700);
+  }
+  renderGrid();
+  renderTable(s, action);
+}
+
+function randomStep() {
+  if (agentPos === GOAL || agentPos === TRAP) { agentPos = 0; renderGrid(); return; }
+  const valid = ACTIONS.filter(a => getNext(agentPos, a) !== agentPos);
+  const ba = bestAction(agentPos);
+  const action = (Math.random() < 0.25 || maxQ(agentPos) === 0)
+    ? valid[Math.floor(Math.random() * valid.length)]
+    : (valid.includes(ba) ? ba : valid[Math.floor(Math.random() * valid.length)]);
+  takeStep(action);
+}
+
+function toggleAuto() {
+  const btn = document.getElementById('auto-btn');
+  if (autoTimer) {
+    clearInterval(autoTimer); autoTimer = null;
+    btn.textContent = '▶ Auto-step'; btn.classList.remove('running');
+  } else {
+    btn.textContent = '⏹ Stop'; btn.classList.add('running');
+    autoTimer = setInterval(() => { randomStep(); if (stepCount >= 500) toggleAuto(); }, 180);
+  }
+}
+
+function resetAll() {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  document.getElementById('auto-btn').textContent = '▶ Auto-step';
+  document.getElementById('auto-btn').classList.remove('running');
+  initQ(); agentPos = 0; stepCount = 0; totalReward = 0;
+  document.getElementById('stat-steps').textContent = '0';
+  document.getElementById('stat-state').textContent = 'S0';
+  document.getElementById('stat-reward').textContent = '—';
+  document.getElementById('stat-reward').style.color = 'var(--text)';
+  document.getElementById('stat-total').textContent = '0.0';
+  document.getElementById('log').innerHTML = '<div class="log-entry" style="color:var(--text3)">— no entries yet —</div>';
+  document.getElementById('formula-box').innerHTML =
+    '<span class="hl">Q(s, a)</span> ← Q(s, a) + α · [ r + γ · max Q(s\', a\') − Q(s, a) ]' +
+    '<span class="hint">Click an adjacent cell to move the agent, or hit Auto-step to start learning</span>';
+  renderGrid(); renderTable(-1, null);
+}
+
+document.getElementById('lr-slider').oninput = e =>
+  document.getElementById('lr-val').textContent = (e.target.value / 10).toFixed(1);
+document.getElementById('gamma-slider').oninput = e =>
+  document.getElementById('gamma-val').textContent = (e.target.value / 10).toFixed(1);
+
+initQ(); renderGrid(); renderTable(-1, null);
+</script>
+</body>
+</html>
