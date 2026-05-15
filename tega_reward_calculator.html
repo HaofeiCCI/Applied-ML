@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tega RL — Reward Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --bg2: #f7f6f3;
+  --bg3: #f0ede8;
+  --border: #e0ddd6;
+  --border2: #ccc9c0;
+  --text: #1a1916;
+  --text2: #6b6960;
+  --text3: #9c9a91;
+  --amber: #BA7517;
+  --amber-bg: #FAEEDA;
+  --radius: 10px;
+  --font: 'Sora', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 48px 5%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+header {
+  margin-bottom: 36px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+}
+.tag {
+  font-size: 11px; font-family: var(--mono); font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 12px;
+}
+h1 { font-size: 38px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+h1 span { color: var(--text3); }
+.subtitle { margin-top: 10px; font-size: 17px; color: var(--text2); line-height: 1.6; }
+
+/* Component cards */
+.components { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 32px; }
+
+.comp-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  background: var(--bg);
+}
+.comp-label {
+  font-size: 12px; font-family: var(--mono); font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 10px;
+}
+.comp-title { font-size: 17px; font-weight: 500; margin-bottom: 10px; }
+.pill-group { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 7px; }
+.pill {
+  font-size: 13px; padding: 3px 11px; border-radius: 99px;
+  border: 0.5px solid var(--border2);
+  background: var(--bg2); color: var(--text2);
+  font-family: var(--mono);
+}
+.pill.blue   { background: #E6F1FB; border-color: #B5D4F4; color: #0C447C; }
+.pill.green  { background: #EAF3DE; border-color: #C0DD97; color: #27500A; }
+.pill.amber  { background: #FAEEDA; border-color: #FAC775; color: #633806; }
+.pill.red    { background: #FCEBEB; border-color: #F7C1C1; color: #791F1F; }
+.pill.purple { background: #EEEDFE; border-color: #AFA9EC; color: #3C3489; }
+.comp-note { font-size: 13px; color: var(--text3); line-height: 1.5; margin-top: 6px; }
+.sublabel { font-size: 13px; font-weight: 500; color: var(--text3); margin: 8px 0 4px; }
+
+/* Formula equation */
+.equation {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 18px;
+  margin-bottom: 24px; font-family: var(--mono);
+  font-size: 14px; line-height: 1.9; color: var(--text2);
+}
+.equation .hi { color: var(--text); font-weight: 500; }
+.equation .sub { font-size: 12px; color: var(--text3); }
+
+/* Calculator section */
+.section-label {
+  font-size: 12px; font-family: var(--mono); font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 14px;
+}
+
+.calc-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.calc-header {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  font-size: 15px; font-weight: 500;
+}
+
+.calc-body { padding: 24px 20px; }
+
+.inputs-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 14px; margin-bottom: 20px;
+}
+.field label {
+  display: block; font-size: 14px; color: var(--text2);
+  margin-bottom: 6px; font-weight: 500;
+}
+.field select {
+  width: 100%; font-size: 15px; font-family: var(--font);
+  padding: 10px 12px; border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: var(--bg); color: var(--text);
+  cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239c9a91' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  transition: border-color 0.15s;
+}
+.field select:focus { outline: none; border-color: var(--border2); }
+.field select:hover { border-color: var(--border2); }
+
+/* Results */
+.results { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.result-box {
+  border-radius: var(--radius); padding: 14px 12px; text-align: center;
+  border: 1px solid var(--border); background: var(--bg2);
+  transition: background 0.2s, border-color 0.2s;
+}
+.result-box.total { background: var(--bg); border-width: 1.5px; }
+.result-box-label {
+  font-size: 12px; font-family: var(--mono); font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text3); margin-bottom: 6px;
+}
+.result-box-val {
+  font-size: 36px; font-weight: 600; font-family: var(--mono);
+  color: var(--text); transition: color 0.2s;
+  line-height: 1;
+}
+.result-box-sub {
+  font-size: 13px; color: var(--text3); margin-top: 5px;
+  line-height: 1.4; min-height: 34px;
+}
+
+/* Bar */
+.bar-section { margin-bottom: 16px; }
+.bar-axis {
+  display: flex; justify-content: space-between;
+  font-size: 13px; font-family: var(--mono); color: var(--text3);
+  margin-bottom: 5px;
+}
+.bar-axis-mid { position: absolute; left: 50%; transform: translateX(-50%); }
+.bar-axis-wrap { position: relative; }
+.bar-track {
+  height: 10px; background: var(--bg3);
+  border-radius: 99px; overflow: hidden; position: relative;
+}
+.bar-zero {
+  position: absolute; left: 50%; top: 0; bottom: 0;
+  width: 1px; background: var(--border2); z-index: 1;
+}
+.bar-fill {
+  position: absolute; top: 0; bottom: 0;
+  border-radius: 99px;
+  transition: left 0.3s, width 0.3s, background 0.3s;
+}
+.bar-current {
+  font-size: 14px; font-family: var(--mono); text-align: center;
+  margin-top: 6px; font-weight: 500;
+  transition: color 0.2s;
+}
+
+/* Formula derivation */
+.derivation {
+  background: var(--bg2); border-radius: var(--radius);
+  padding: 16px 18px; font-family: var(--mono);
+  font-size: 15px; line-height: 2.1; color: var(--text2);
+  border: 1px solid var(--border);
+}
+.derivation .hi { color: var(--text); font-weight: 500; }
+.derivation .val { font-weight: 500; }
+.derivation .pos { color: #27500A; }
+.derivation .neg { color: #791F1F; }
+.derivation .neu { color: #633806; }
+
+.scenarios { margin-top: 24px; }
+.scenarios-label { font-size: 12px; font-family: var(--mono); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; }
+.scenario-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.scenario-btn {
+  font-family: var(--font); font-size: 13px; font-weight: 500;
+  padding: 8px 16px; border-radius: 99px;
+  border: 1px solid var(--border2);
+  background: var(--bg); color: var(--text2);
+  cursor: pointer; transition: all 0.15s;
+}
+.scenario-btn:hover { border-color: var(--text3); color: var(--text); background: var(--bg2); }
+
+footer {
+  margin-top: 48px; padding-top: 20px;
+  border-top: 1px solid var(--border);
+  font-size: 12px; color: var(--text3); font-family: var(--mono);
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="tag">Case Study · Park et al. 2019 · AAAI</div>
+  <h1>Tega RL <span>/ Reward Calculator</span></h1>
+  <p class="subtitle">A social robot teaches literacy to 4–6 year olds using Q-learning. Each story sentence is an action; the child's response determines the reward.</p>
+</header>
+
+<!-- Component overview -->
+<div class="components">
+
+  <div class="comp-card">
+    <div class="comp-label">State · 20 total (5 × 4)</div>
+    <div class="comp-title">What the robot observes</div>
+    <div class="sublabel">Task behavior — 5</div>
+    <div class="pill-group">
+      <span class="pill blue">no answer</span>
+      <span class="pill blue">answer + prompt + short</span>
+      <span class="pill blue">answer + prompt + long</span>
+      <span class="pill blue">answer, no prompt + short</span>
+      <span class="pill blue">answer, no prompt + long</span>
+    </div>
+    <div class="sublabel">Facial arousal — 4</div>
+    <div class="pill-group">
+      <span class="pill">Q1 low</span>
+      <span class="pill">Q2</span>
+      <span class="pill">Q3</span>
+      <span class="pill amber">Q4 high</span>
+    </div>
+    <div class="comp-note">Quartiles are calibrated individually per child from session 1.</div>
+  </div>
+
+  <div class="comp-card">
+    <div class="comp-label">Action · 6 total (2 × 3)</div>
+    <div class="comp-title">Which story sentence to tell</div>
+    <div class="sublabel">Lexical complexity — 2</div>
+    <div class="pill-group">
+      <span class="pill green">known word (∈ κ)</span>
+      <span class="pill amber">new word (∉ κ)</span>
+    </div>
+    <div class="sublabel">Syntactic complexity — 3</div>
+    <div class="pill-group">
+      <span class="pill">lower than child</span>
+      <span class="pill green">same as child</span>
+      <span class="pill amber">higher than child</span>
+    </div>
+    <div class="comp-note">κ (known vocab) updates after every session as the child learns.</div>
+  </div>
+
+  <div class="comp-card">
+    <div class="comp-label">Environment</div>
+    <div class="comp-title">The world the agent lives in</div>
+    <div class="pill-group">
+      <span class="pill purple">Tega robot</span>
+      <span class="pill purple">67 children aged 4–6</span>
+      <span class="pill purple">81 storybooks</span>
+      <span class="pill purple">12 weeks · once/week</span>
+    </div>
+    <div class="sublabel">Sensors feeding state</div>
+    <div class="pill-group">
+      <span class="pill blue">front camera → facial arousal</span>
+      <span class="pill blue">EDA wristbands → engagement</span>
+      <span class="pill blue">overhead camera → body pose</span>
+      <span class="pill blue">microphone → speech transcript</span>
+    </div>
+    <div class="comp-note">Each child has their own Q-table. Policies never mix between children.</div>
+  </div>
+
+  <div class="comp-card">
+    <div class="comp-label">Reward · −100 to +100</div>
+    <div class="comp-title">r = 0.5 × engagement + 0.5 × learning</div>
+    <div class="sublabel">Engagement (from arousal + response)</div>
+    <div class="pill-group">
+      <span class="pill red">silent: 25·(n−5)</span>
+      <span class="pill green">answered: 25·n</span>
+    </div>
+    <div class="sublabel">Learning (from story retell transcript)</div>
+    <div class="pill-group">
+      <span class="pill red">−100 no phrase matched</span>
+      <span class="pill">0 known vocab + low/same syntax</span>
+      <span class="pill amber">+50 one breakthrough</span>
+      <span class="pill green">+100 both breakthroughs</span>
+    </div>
+    <div class="comp-note">Learning reward is computed after the child retells the story — a delayed signal, closer to Monte Carlo than pure TD.</div>
+  </div>
+
+</div>
+
+<!-- Calculator -->
+<div class="section-label">Interactive reward calculator</div>
+
+<div class="calc-card">
+  <div class="calc-header">Adjust the scenario — reward updates live</div>
+  <div class="calc-body">
+
+    <div class="inputs-grid">
+      <div class="field">
+        <label>Arousal quartile (n)</label>
+        <select id="arousal" onchange="calc()">
+          <option value="1">Q1 — low arousal</option>
+          <option value="2">Q2</option>
+          <option value="3" selected>Q3</option>
+          <option value="4">Q4 — high arousal</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Did the child answer?</label>
+        <select id="answered" onchange="calc()">
+          <option value="yes" selected>Yes</option>
+          <option value="no">No — stayed silent</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Lexical complexity of story sentence</label>
+        <select id="lexical" onchange="calc()">
+          <option value="known" selected>Known word (∈ κ)</option>
+          <option value="new">New word (∉ κ)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Syntactic complexity of story sentence</label>
+        <select id="syntax" onchange="calc()">
+          <option value="low">Lower than child's level</option>
+          <option value="same" selected>Same as child's level</option>
+          <option value="high">Higher than child's level</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="result-box">
+        <div class="result-box-label">Engagement</div>
+        <div class="result-box-val" id="eng-val">75</div>
+        <div class="result-box-sub" id="eng-sub">answered · Q3<br>25 × 3</div>
+      </div>
+      <div class="result-box">
+        <div class="result-box-label">Learning</div>
+        <div class="result-box-val" id="learn-val">0</div>
+        <div class="result-box-sub" id="learn-sub">known vocab +<br>same syntax</div>
+      </div>
+      <div class="result-box total" id="total-box">
+        <div class="result-box-label">Total reward r</div>
+        <div class="result-box-val" id="total-val">37.5</div>
+        <div class="result-box-sub" id="total-sub">0.5 × 75<br>+ 0.5 × 0</div>
+      </div>
+    </div>
+
+    <!-- Bar -->
+    <div class="bar-section">
+      <div class="bar-axis-wrap">
+        <div class="bar-axis">
+          <span>−100</span>
+          <span>0</span>
+          <span>+100</span>
+        </div>
+      </div>
+      <div class="bar-track">
+        <div class="bar-zero"></div>
+        <div class="bar-fill" id="bar-fill"></div>
+      </div>
+      <div class="bar-current" id="bar-label">r = 37.5</div>
+    </div>
+
+    <!-- Derivation -->
+    <div class="derivation" id="derivation"></div>
+
+    <!-- Preset scenarios -->
+    <div class="scenarios">
+      <div class="scenarios-label">Try a preset scenario</div>
+      <div class="scenario-row">
+        <button class="scenario-btn" onclick="setScenario(4,'yes','new','high')">🏆 Best case (+100)</button>
+        <button class="scenario-btn" onclick="setScenario(1,'no','known','low')">💀 Worst case (−100)</button>
+        <button class="scenario-btn" onclick="setScenario(4,'yes','new','same')">High arousal + new word</button>
+        <button class="scenario-btn" onclick="setScenario(2,'no','new','high')">Bored but challenging content</button>
+        <button class="scenario-btn" onclick="setScenario(3,'yes','known','high')">Engaged + new syntax only</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  Park, H.W. et al. (2019) · "A Model-Free Affective Reinforcement Learning Approach to Personalization of an Autonomous Social Robot Companion" · AAAI-19
+</footer>
+
+<script>
+function calc() {
+  const n        = parseInt(document.getElementById('arousal').value);
+  const answered = document.getElementById('answered').value === 'yes';
+  const lexical  = document.getElementById('lexical').value;
+  const syntax   = document.getElementById('syntax').value;
+
+  // Engagement
+  const eng = answered ? 25 * n : 25 * (n - 5);
+
+  // Learning
+  const newLex = lexical === 'new';
+  const newSyn = syntax === 'high';
+  let learn = 0, learnDesc = '';
+  if (newLex && newSyn)        { learn = 100; learnDesc = 'new word AND new syntax → both breakthroughs'; }
+  else if (newLex || newSyn)   { learn = 50;  learnDesc = newLex ? 'new word (lexical breakthrough)' : 'new syntax (syntactic breakthrough)'; }
+  else                         { learn = 0;   learnDesc = 'known vocab + low/same syntax → no breakthrough'; }
+
+  const total   = 0.5 * eng + 0.5 * learn;
+  const rounded = Math.round(total * 10) / 10;
+
+  // Update results
+  document.getElementById('eng-val').textContent  = eng;
+  document.getElementById('eng-sub').innerHTML    = `${answered ? 'answered' : 'silent'} · Q${n}<br>25 × ${answered ? n : `(${n}−5)`}`;
+  document.getElementById('learn-val').textContent = learn;
+  document.getElementById('learn-sub').innerHTML  = learnDesc.replace(' → ', '<br>');
+  document.getElementById('total-val').textContent = rounded;
+  document.getElementById('total-sub').innerHTML  = `0.5 × ${eng}<br>+ 0.5 × ${learn}`;
+  document.getElementById('bar-label').textContent = `r = ${rounded}`;
+
+  // Colors
+  let color, borderColor, textColor;
+  if (total >= 50)        { color = '#EAF3DE'; borderColor = '#639922'; textColor = '#27500A'; }
+  else if (total > 0)     { color = '#FAEEDA'; borderColor = '#BA7517'; textColor = '#633806'; }
+  else if (total === 0)   { color = '#f7f6f3'; borderColor = '#ccc9c0'; textColor = '#6b6960'; }
+  else                    { color = '#FCEBEB'; borderColor = '#A32D2D'; textColor = '#791F1F'; }
+
+  const totalBox = document.getElementById('total-box');
+  totalBox.style.background    = color;
+  totalBox.style.borderColor   = borderColor;
+  document.getElementById('total-val').style.color = textColor;
+  document.getElementById('bar-label').style.color = textColor;
+
+  // Bar: map -100..+100 to 0..100%
+  // Positive: starts at 50%, extends right
+  // Negative: ends at 50%, extends left
+  const bar = document.getElementById('bar-fill');
+  const barColor = total >= 0 ? borderColor : '#A32D2D';
+  bar.style.background = barColor;
+  if (total >= 0) {
+    const w = (total / 100) * 50;
+    bar.style.left  = '50%';
+    bar.style.width = w + '%';
+  } else {
+    const w = (Math.abs(total) / 100) * 50;
+    bar.style.left  = (50 - w) + '%';
+    bar.style.width = w + '%';
+  }
+
+  // Derivation
+  const engClass = eng > 0 ? 'pos' : 'neg';
+  const learnClass = learn > 0 ? 'pos' : learn < 0 ? 'neg' : '';
+  const totalClass = total > 0 ? 'pos' : total < 0 ? 'neg' : '';
+  const engFormula = answered
+    ? `25 × ${n} = <span class="val ${engClass}">${eng}</span> &nbsp;(answered, Q${n})`
+    : `25 × (${n}−5) = <span class="val ${engClass}">${eng}</span> &nbsp;(silent, Q${n})`;
+
+  document.getElementById('derivation').innerHTML =
+    `<span class="hi">engagement</span> = ${engFormula}<br>` +
+    `<span class="hi">learning</span> &nbsp;&nbsp;= <span class="val ${learnClass}">${learn}</span> &nbsp;(${learnDesc})<br>` +
+    `<span class="hi">r</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= 0.5 × ${eng} + 0.5 × ${learn} = <span class="val ${totalClass}">${rounded}</span>`;
+}
+
+function setScenario(n, ans, lex, syn) {
+  document.getElementById('arousal').value  = n;
+  document.getElementById('answered').value = ans;
+  document.getElementById('lexical').value  = lex;
+  document.getElementById('syntax').value   = syn;
+  calc();
+}
+
+calc();
+</script>
+</body>
+</html>
