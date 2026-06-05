@@ -52,25 +52,30 @@
     border-radius: 10px;
     text-decoration: none; color: inherit;
     transition: border-color 0.15s, background 0.15s;
+    gap: 16px;
   }
   a.tool-card:hover { border-color: #b8b5ae; background: #f7f6f3; }
 
-  .tool-info { display: flex; flex-direction: column; gap: 4px; }
+  .tool-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
   .tool-name { font-size: 15px; font-weight: 500; }
   .tool-desc { font-size: 13px; color: #6b6960; }
+
+  .tool-right {
+    display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+  }
 
   .tool-tag {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 11px; font-weight: 500;
     padding: 3px 10px; border-radius: 99px; white-space: nowrap;
-    flex-shrink: 0; margin-left: 16px;
   }
   .tag-interactive { background: #E6F1FB; color: #0C447C; }
   .tag-reference   { background: #EAF3DE; color: #27500A; }
   .tag-casestudy   { background: #FAEEDA; color: #633806; }
   .tag-beta        { background: #EEEDFE; color: #3C3489; }
 
-  .arrow { font-size: 16px; color: #ccc9c0; margin-left: 12px; flex-shrink: 0; }
+  .arrow { font-size: 16px; color: #ccc9c0; }
 
   footer {
     margin-top: auto; padding-top: 48px;
@@ -96,8 +101,7 @@
       <span class="tool-name">RL Glossary</span>
       <span class="tool-desc">33 key terms: Q-learning, Monte Carlo, PPO and more. Searchable, filterable, with See Also links.</span>
     </div>
-    <span class="tool-tag tag-reference">Reference</span>
-    <span class="arrow">→</span>
+    <div class="tool-right"><span class="tool-tag tag-reference">Reference</span><span class="arrow">→</span></div>
   </a>
 
   <a class="tool-card" href="q_table_demo.html">
@@ -105,8 +109,7 @@
       <span class="tool-name">Q-Table Interactive Demo</span>
       <span class="tool-desc">Drag an agent around a grid world and watch Q-values update in real time.</span>
     </div>
-    <span class="tool-tag tag-interactive">Interactive</span>
-    <span class="arrow">→</span>
+    <div class="tool-right"><span class="tool-tag tag-interactive">Interactive</span><span class="arrow">→</span></div>
   </a>
 
   <a class="tool-card" href="nn_forward_pass.html">
@@ -114,8 +117,7 @@
       <span class="tool-name">Neural Network Forward Pass</span>
       <span class="tool-desc">Visualise how data flows through a neural network layer by layer.</span>
     </div>
-    <span class="tool-tag tag-interactive">Interactive</span>
-    <span class="arrow">→</span>
+    <div class="tool-right"><span class="tool-tag tag-interactive">Interactive</span><span class="arrow">→</span></div>
   </a>
 
 </div>
@@ -129,8 +131,7 @@
       <span class="tool-name">Tega Reward Calculator</span>
       <span class="tool-desc">See how engagement and learning combine into a reward signal. Adjust arousal, response, and story complexity.</span>
     </div>
-    <span class="tool-tag tag-casestudy">Case Study</span>
-    <span class="arrow">→</span>
+    <div class="tool-right"><span class="tool-tag tag-casestudy">Case Study</span><span class="arrow">→</span></div>
   </a>
 
   <a class="tool-card" href="tega_qtable.html">
@@ -138,8 +139,7 @@
       <span class="tool-name">Tega Sample Q-Table</span>
       <span class="tool-desc">An illustrative per-child Q-table after 6 sessions, showing how the robot's policy personalises to one learner.</span>
     </div>
-    <span class="tool-tag tag-casestudy">Case Study</span>
-    <span class="arrow">→</span>
+    <div class="tool-right"><span class="tool-tag tag-casestudy">Case Study</span><span class="arrow">→</span></div>
   </a>
 
 </div>
@@ -153,8 +153,7 @@
       <span class="tool-name">01: Vision Encoder</span>
       <span class="tool-desc">How a robot sees: encoding visual input into a representation the model can reason over.</span>
     </div>
-    <span class="tool-tag tag-interactive">Interactive</span>
-    <span class="arrow">→</span>
+    <div class="tool-right"><span class="tool-tag tag-interactive">Interactive</span><span class="arrow">→</span></div>
   </a>
 
   <a class="tool-card" href="02_language_encoder.html">
@@ -162,8 +161,7 @@
       <span class="tool-name">02: Language Encoder</span>
       <span class="tool-desc">How a robot reads instructions: encoding text or language commands into the same representational space.</span>
     </div>
-    <span class="tool-tag tag-interactive">Interactive</span>
-    <span class="arrow">→</span>
+    <div class="tool-right"><span class="tool-tag tag-interactive">Interactive</span><span class="arrow">→</span></div>
   </a>
 
   <a class="tool-card" href="03_fusion.html">
@@ -171,8 +169,7 @@
       <span class="tool-name">03: Fusion</span>
       <span class="tool-desc">Combining vision and language representations so the model can act on both at once.</span>
     </div>
-    <span class="tool-tag tag-interactive">Interactive</span>
-    <span class="arrow">→</span>
+    <div class="tool-right"><span class="tool-tag tag-interactive">Interactive</span><span class="arrow">→</span></div>
   </a>
 
   <a class="tool-card" href="04_hierarchical_planning.html">
@@ -180,8 +177,7 @@
       <span class="tool-name">04: Hierarchical Planning</span>
       <span class="tool-desc">Breaking a high-level goal into sub-tasks: how physical AI systems plan and execute sequences of actions.</span>
     </div>
-    <span class="tool-tag tag-interactive">Interactive</span>
-    <span class="arrow">→</span>
+    <div class="tool-right"><span class="tool-tag tag-interactive">Interactive</span><span class="arrow">→</span></div>
   </a>
 
 </div>
