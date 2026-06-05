@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vision-Language Fusion</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+  :root{
+    --bg:#ffffff;--surface:#f5f5f5;--border:#d0d0d0;
+    --red:#c1121f;--red-dim:rgba(193,18,31,0.08);
+    --blue:#0077b6;--blue-dim:rgba(0,119,182,0.08);
+    --green:#057a55;--green-dim:rgba(5,122,85,0.08);
+    --black:#111111;--grey:#666666;--mid:#333333;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--black);font-family:'Archivo',sans-serif;font-size:18px;padding:28px 32px;line-height:1.5;}
+  .tag{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:3px;color:var(--red);text-transform:uppercase;margin-bottom:6px;}
+  h1{font-size:44px;font-weight:900;line-height:1.05;margin-bottom:8px;}
+  .subtitle{font-size:18px;color:var(--grey);margin-bottom:24px;max-width:700px;line-height:1.6;}
+  .method-tabs{display:flex;border:2px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:20px;}
+  .method-tab{flex:1;padding:12px 10px;background:none;border:none;border-right:2px solid var(--border);cursor:pointer;transition:all 0.2s;text-align:center;}
+  .method-tab:last-child{border-right:none;}
+  .tab-name{display:block;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;margin-bottom:3px;}
+  .tab-sub{display:block;font-size:13px;color:var(--grey);}
+  .method-tab.m0{background:var(--red-dim);}.method-tab.m0 .tab-name{color:var(--red);}
+  .method-tab.m1{background:var(--blue-dim);}.method-tab.m1 .tab-name{color:var(--blue);}
+  .method-tab.m2{background:var(--green-dim);}.method-tab.m2 .tab-name{color:var(--green);}
+  .method-tab:not([class*='m0']):not([class*='m1']):not([class*='m2']):hover{background:var(--surface);}
+  .diagram-area{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:24px;margin-bottom:18px;min-height:280px;display:flex;align-items:center;justify-content:center;}
+  .node{padding:12px 18px;border:2px solid var(--border);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:15px;text-align:center;display:inline-block;}
+  .node-icon{font-size:26px;display:block;margin-bottom:4px;}
+  .node-lbl{font-size:12px;color:var(--grey);display:block;margin-top:2px;}
+  .vis-node{border-color:var(--red);background:var(--red-dim);color:var(--red);}
+  .lang-node{border-color:var(--blue);background:var(--blue-dim);color:var(--blue);}
+  .fused-node{border-color:var(--green);background:var(--green-dim);color:var(--green);}
+  .demo-area{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:20px;margin-bottom:18px;}
+  .demo-lbl{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;color:var(--grey);text-transform:uppercase;margin-bottom:14px;}
+  .slider-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+  .slider-label{font-family:'JetBrains Mono',monospace;font-size:16px;min-width:110px;}
+  input[type=range]{flex:1;height:5px;accent-color:var(--red);cursor:pointer;}
+  .slider-val{font-family:'JetBrains Mono',monospace;font-size:16px;min-width:46px;text-align:right;color:var(--grey);}
+  .out-bar{height:36px;border-radius:4px;transition:all 0.4s;min-width:5px;display:inline-block;}
+  .comparison{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px;}
+  @media(max-width:700px){.comparison{grid-template-columns:1fr;}}
+  .comp-card{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:18px;cursor:pointer;transition:border-color 0.2s;}
+  .comp-card h4{font-family:'JetBrains Mono',monospace;font-size:16px;margin-bottom:7px;}
+  .comp-card p{font-size:16px;color:var(--mid);line-height:1.6;}
+  .comp-card .used-by{font-family:'JetBrains Mono',monospace;font-size:13px;margin-top:10px;padding:4px 10px;border-radius:12px;display:inline-block;}
+  .c0 h4{color:var(--red);}.c0 .used-by{background:var(--red-dim);color:var(--red);}
+  .c1 h4{color:var(--blue);}.c1 .used-by{background:var(--blue-dim);color:var(--blue);}
+  .c2 h4{color:var(--green);}.c2 .used-by{background:var(--green-dim);color:var(--green);}
+  .explain{background:var(--surface);border:2px solid var(--border);border-left:5px solid var(--red);border-radius:6px;padding:18px 22px;margin-bottom:16px;}
+  .explain h3{font-size:18px;font-family:'JetBrains Mono',monospace;margin-bottom:6px;}
+  .explain p{font-size:17px;line-height:1.65;color:var(--mid);}
+  .explain strong{color:var(--black);font-weight:700;}
+  .concept-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{padding:6px 16px;border:2px solid var(--border);border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--grey);}
+  .chip.red{border-color:var(--red);color:var(--red);}
+  .chip.blue{border-color:var(--blue);color:var(--blue);}
+  .chip.green{border-color:var(--green);color:var(--green);}
+  @keyframes flowIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+</style>
+</head>
+<body>
+<div class="tag">VLA Workshop - Component 03</div>
+<h1>Vision-Language Fusion</h1>
+<p class="subtitle">The bridge between seeing and understanding. Three methods for combining visual and language embeddings into one representation the robot can act on.</p>
+
+<div class="method-tabs" id="methodTabs">
+  <button class="method-tab" onclick="setMethod(0)"><span class="tab-name">FiLM</span><span class="tab-sub">Feature-wise Linear Modulation</span></button>
+  <button class="method-tab" onclick="setMethod(1)"><span class="tab-name">Cross-Attention</span><span class="tab-sub">Language queries Vision</span></button>
+  <button class="method-tab" onclick="setMethod(2)"><span class="tab-name">Concatenation</span><span class="tab-sub">Simply join them</span></button>
+</div>
+
+<div class="diagram-area" id="diagram"><p style="color:#bbb;font-family:'JetBrains Mono',monospace;font-size:16px;">Select a method above.</p></div>
+
+<div class="demo-area">
+  <div class="demo-lbl">Interactive — Adjust Fusion Weights</div>
+  <div class="slider-row">
+    <span class="slider-label" style="color:var(--red)">Vision</span>
+    <input type="range" id="vs" min="0" max="100" value="50" oninput="updateDemo()">
+    <span class="slider-val" id="vv">0.50</span>
+  </div>
+  <div class="slider-row">
+    <span class="slider-label" style="color:var(--blue)">Language</span>
+    <input type="range" id="ls" min="0" max="100" value="50" oninput="updateDemo()">
+    <span class="slider-val" id="lv">0.50</span>
+  </div>
+  <p style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#aaa;margin:8px 0;">Fused output vector:</p>
+  <div id="outVec" style="display:flex;gap:4px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px;"></div>
+  <p style="font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--grey);" id="demoNote">Adjust the sliders to see how emphasis on vision vs language changes the fused vector.</p>
+</div>
+
+<div class="comparison">
+  <div class="comp-card c0" onclick="setMethod(0)"><h4>FiLM</h4><p>Language modulates visual features via scale and shift. Vision is "coloured" by the instruction.</p><span class="used-by">RT-1 (DeepMind)</span></div>
+  <div class="comp-card c1" onclick="setMethod(1)"><h4>Cross-Attention</h4><p>Language tokens query visual tokens. The model learns which image regions matter for each word.</p><span class="used-by">Flamingo, PaLM-E</span></div>
+  <div class="comp-card c2" onclick="setMethod(2)"><h4>Concatenation</h4><p>Vision and language tokens are joined into one long sequence. Transformer learns all the rest.</p><span class="used-by">RT-2, OpenVLA (most VLAs)</span></div>
+</div>
+
+<div class="explain" id="explainBox"><h3 style="color:var(--red)">Select a method above</h3><p>Each method answers: <strong>how should what the robot sees interact with what it has been told to do?</strong></p></div>
+
+<div class="concept-row">
+  <div class="chip red">FiLM — RT-1</div>
+  <div class="chip blue">Cross-Attn — Flamingo</div>
+  <div class="chip green">Concat — RT-2 / OpenVLA</div>
+</div>
+
+<script>
+let cm=-1;
+function sVals(seed,n=6){return Array.from({length:n},(_,j)=>Math.abs(Math.sin(seed+j*2.1)));}
+function bars(vals,col,h=14){return `<div style="display:flex;gap:3px;flex-wrap:wrap;">${vals.map(v=>`<div style="width:${v*34+4}px;height:${h}px;border-radius:2px;background:${col};opacity:${0.3+v*0.7};display:inline-block;"></div>`).join('')}</div>`;}
+
+function setMethod(i){
+  cm=i;
+  const tabs=document.querySelectorAll('.method-tab');
+  tabs.forEach((t,j)=>{t.className='method-tab';if(j===i)t.classList.add('m'+i);});
+  [buildFilm,buildCrossAttn,buildConcat][i]();
+  const exps=[
+    {t:'FiLM — Feature-wise Linear Modulation',c:'var(--red)',p:'The language embedding generates two vectors: <strong>γ (scale)</strong> and <strong>β (shift)</strong>. Applied element-wise to visual features: output = γ × vision + β. The instruction "tunes" the visual representation — amplifying relevant features, suppressing irrelevant ones. Used in <strong>RT-1</strong> (DeepMind).'},
+    {t:'Cross-Attention — Language queries Vision',c:'var(--blue)',p:'Language tokens act as <strong>Queries (Q)</strong>, visual tokens as <strong>Keys (K) and Values (V)</strong>. For each word in the instruction, which parts of the image are most relevant? The model learns to focus visual attention based on the instruction. If the instruction mentions "cup", cross-attention assigns high weight to the cup region. Used in <strong>Flamingo, PaLM-E</strong>.'},
+    {t:'Concatenation — The Dominant Method',c:'var(--green)',p:'The simplest approach: visual tokens and language tokens are <strong>joined into one sequence</strong> and fed together into a Transformer. The model learns all relationships through standard self-attention. Despite its simplicity, this is the most widely used method — it gives the Transformer maximum flexibility. Used in <strong>RT-2, OpenVLA, and most modern VLAs</strong>.'},
+  ][i];
+  document.getElementById('explainBox').style.borderLeftColor=exps.c;
+  document.getElementById('explainBox').innerHTML=`<h3 style="color:${exps.c}">${exps.t}</h3><p>${exps.p}</p>`;
+  updateDemo();
+}
+
+function buildFilm(){
+  const vv=sVals(1),lv=sVals(7),gm=sVals(13),bt=sVals(19);
+  const out=vv.map((v,i)=>Math.min(1,Math.abs(v*gm[i]+bt[i]*0.3)));
+  document.getElementById('diagram').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:20px;align-items:center;width:100%;">
+      <div style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;">
+        <div style="text-align:center;"><div class="node vis-node" style="margin-bottom:8px;"><span class="node-icon">👁</span>Vision Features V<span class="node-lbl">from image encoder</span></div>${bars(vv,'var(--red)')}</div>
+        <div style="text-align:center;"><div class="node lang-node" style="margin-bottom:8px;"><span class="node-icon">💬</span>Language Embed L<span class="node-lbl">from text encoder</span></div>${bars(lv,'var(--blue)')}</div>
+      </div>
+      <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;justify-content:center;">
+        <div style="text-align:center;"><p style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#aaa;margin-bottom:6px;">L → γ (scale)</p>${bars(gm,'var(--blue)')}</div>
+        <div style="font-size:24px;color:var(--red);font-weight:700;">×</div>
+        <div style="text-align:center;"><p style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#aaa;margin-bottom:6px;">L → β (shift)</p>${bars(bt,'var(--blue)')}</div>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--mid);padding:8px 18px;border:2px dashed var(--border);border-radius:5px;">output = γ × V + β</div>
+      <div style="text-align:center;"><div class="node fused-node" style="margin-bottom:8px;"><span class="node-icon">🔀</span>Fused Representation<span class="node-lbl">language-modulated vision</span></div>${bars(out,'var(--green)')}</div>
+    </div>`;
+}
+
+function buildCrossAttn(){
+  const langToks=['pick','up','cup'];
+  const attnW=[[0.1,0.2,0.7],[0.3,0.4,0.3],[0.1,0.1,0.8]];
+  document.getElementById('diagram').innerHTML=`
+    <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap;justify-content:center;width:100%;">
+      <div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--blue);margin-bottom:10px;letter-spacing:1px;">QUERIES (Language)</p>
+        ${langToks.map(t=>`<div class="node lang-node" style="margin-bottom:8px;padding:10px 16px;font-size:16px;display:block;">${t}</div>`).join('')}
+      </div>
+      <div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#aaa;margin-bottom:10px;letter-spacing:1px;">ATTENTION SCORES</p>
+        ${attnW.map((row,i)=>`<div style="display:flex;gap:5px;margin-bottom:6px;align-items:center;">${row.map(w=>`<div style="width:48px;height:34px;border-radius:4px;background:var(--red);opacity:${w};display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;color:#fff;">${w.toFixed(1)}</div>`).join('')}<span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#aaa;margin-left:6px;">"${langToks[i]}"</span></div>`).join('')}
+        <p style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#bbb;margin-top:4px;">darker = higher attention</p>
+      </div>
+      <div>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--red);margin-bottom:10px;letter-spacing:1px;">KEYS / VALUES (Vision)</p>
+        ${['region A (cup)','region B (table)','region C (bg)'].map(r=>`<div class="node vis-node" style="margin-bottom:8px;padding:10px 14px;font-size:14px;display:block;">${r}</div>`).join('')}
+      </div>
+    </div>
+    <div style="margin-top:20px;text-align:center;width:100%;">
+      <p style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--mid);margin-bottom:12px;">Attn(Q,K,V) = softmax(QKᵀ / √d) × V</p>
+      <div class="node fused-node" style="display:inline-block;padding:12px 28px;"><span class="node-icon">🔀</span>Language-guided visual representation<span class="node-lbl">each word attends to relevant image regions</span></div>
+    </div>`;
+}
+
+function buildConcat(){
+  const vt=['P1','P2','P3','P4'];const lt=['pick','up','cup'];
+  document.getElementById('diagram').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:16px;align-items:center;width:100%;">
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:center;justify-content:center;">
+        <div><p style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--red);margin-bottom:10px;letter-spacing:1px;">VISION TOKENS</p><div style="display:flex;gap:8px;">${vt.map(t=>`<div class="node vis-node" style="padding:10px;font-size:16px;">${t}</div>`).join('')}</div></div>
+        <div style="font-size:26px;color:#ccc;margin-top:20px;">+</div>
+        <div><p style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--blue);margin-bottom:10px;letter-spacing:1px;">LANGUAGE TOKENS</p><div style="display:flex;gap:8px;">${lt.map(t=>`<div class="node lang-node" style="padding:10px;font-size:16px;">${t}</div>`).join('')}</div></div>
+      </div>
+      <p style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#aaa;">↓ concatenate into one sequence</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+        ${[...vt.map(t=>({t,c:'var(--red)',bg:'var(--red-dim)'})),...lt.map(t=>({t,c:'var(--blue)',bg:'var(--blue-dim)'}))].map(({t,c,bg},i)=>`<div style="padding:10px 14px;border:2px solid ${c};border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:16px;color:${c};background:${bg};opacity:0;animation:flowIn 0.3s ${i*0.07}s both ease;">${t}</div>`).join('')}
+      </div>
+      <p style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#aaa;">↓ into Transformer (self-attention learns all cross-modal relationships)</p>
+      <div class="node fused-node" style="padding:12px 32px;"><span class="node-icon">🔀</span>Unified multimodal sequence<span class="node-lbl">most common in modern VLAs</span></div>
+    </div>`;
+}
+
+function updateDemo(){
+  const vis=document.getElementById('vs').value/100;
+  const lang=document.getElementById('ls').value/100;
+  document.getElementById('vv').textContent=vis.toFixed(2);
+  document.getElementById('lv').textContent=lang.toFixed(2);
+  const n=14;const vc=document.getElementById('outVec');vc.innerHTML='';
+  for(let i=0;i<n;i++){
+    const vc2=Math.abs(Math.sin(i*2.1+1))*vis;
+    const lc2=Math.abs(Math.sin(i*1.7+5))*lang;
+    const fused=(vc2+lc2)/(vis+lang+0.001);
+    const h=Math.min(56,fused*56+8);
+    const r=i<n/2?Math.round(vis*160+40):40;
+    const b=i>=n/2?Math.round(lang*160+40):40;
+    const bar=document.createElement('div');bar.className='out-bar';
+    bar.style.cssText=`width:${Math.max(5,fused*28+5)}px;height:${h}px;background:rgb(${r},${Math.round(fused*110+40)},${b});`;
+    vc.appendChild(bar);
+  }
+  const dn=document.getElementById('demoNote');
+  if(vis>0.7&&lang<0.3)dn.textContent='High vision weight: the robot relies mostly on what it sees. Useful for precise manipulation.';
+  else if(lang>0.7&&vis<0.3)dn.textContent='High language weight: the robot is driven more by the instruction. Useful for abstract commands.';
+  else dn.textContent='Balanced fusion: the robot integrates both modalities equally — typical in VLA models.';
+}
+window.onload=()=>{setMethod(0);updateDemo();};
+</script>
+</body>
+</html>

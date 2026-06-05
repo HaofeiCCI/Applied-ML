@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hierarchical Planning</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+  :root{
+    --bg:#ffffff;--surface:#f5f5f5;--border:#d0d0d0;
+    --red:#c1121f;--red-dim:rgba(193,18,31,0.08);
+    --blue:#0077b6;--blue-dim:rgba(0,119,182,0.08);
+    --green:#057a55;--green-dim:rgba(5,122,85,0.08);
+    --amber:#b45309;--amber-dim:rgba(180,83,9,0.08);
+    --black:#111111;--grey:#666666;--mid:#333333;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--black);font-family:'Archivo',sans-serif;font-size:18px;padding:28px 32px;line-height:1.5;}
+  .tag{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:3px;color:var(--red);text-transform:uppercase;margin-bottom:6px;}
+  h1{font-size:44px;font-weight:900;line-height:1.05;margin-bottom:8px;}
+  .subtitle{font-size:18px;color:var(--grey);margin-bottom:24px;max-width:700px;line-height:1.6;}
+  .task-area{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:18px;}
+  .task-lbl{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;color:var(--grey);text-transform:uppercase;margin-bottom:12px;}
+  .task-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;}
+  .task-btn{padding:14px 16px;background:#fff;border:2px solid var(--border);border-radius:6px;cursor:pointer;transition:all 0.2s;text-align:left;}
+  .task-btn:hover{border-color:#999;background:var(--surface);}
+  .task-btn.active{border-color:var(--red);background:var(--red-dim);}
+  .task-emoji{font-size:26px;display:block;margin-bottom:5px;}
+  .task-name{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--black);display:block;font-weight:700;}
+  .task-desc{font-size:14px;color:var(--grey);display:block;margin-top:2px;}
+  .ctrl-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
+  .btn{padding:10px 22px;border:2px solid var(--border);border-radius:5px;background:none;color:var(--black);font-family:'JetBrains Mono',monospace;font-size:14px;cursor:pointer;transition:all 0.2s;}
+  .btn:hover{background:var(--surface);}
+  .btn.primary{background:var(--red);border-color:var(--red);color:#fff;}
+  .btn.primary:hover{background:#a00e19;}
+  .status-txt{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--grey);}
+  .hierarchy{margin-bottom:18px;border-radius:8px;overflow:hidden;border:2px solid var(--border);}
+  .level{padding:18px 22px;border-bottom:2px solid var(--border);}
+  .level:last-child{border-bottom:none;}
+  .level-header{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .level-badge{padding:4px 12px;border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;white-space:nowrap;}
+  .level-title{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;}
+  .level-role{font-size:16px;color:var(--grey);margin-bottom:14px;}
+  .lv0{background:#f0f5ff;}
+  .lv0 .level-badge{background:var(--blue-dim);color:var(--blue);border:2px solid var(--blue);}
+  .lv0 .level-title{color:var(--blue);}
+  .lv1{background:var(--surface);}
+  .lv1 .level-badge{background:var(--amber-dim);color:var(--amber);border:2px solid var(--amber);}
+  .lv1 .level-title{color:var(--amber);}
+  .lv2{background:#fff5f5;}
+  .lv2 .level-badge{background:var(--red-dim);color:var(--red);border:2px solid var(--red);}
+  .lv2 .level-title{color:var(--red);}
+  .instr-display{font-size:22px;font-weight:700;color:var(--black);padding:10px 16px;border:2px solid var(--blue);border-radius:6px;background:var(--blue-dim);display:inline-block;font-style:italic;}
+  .subtask-list{display:flex;flex-direction:column;gap:8px;}
+  .subtask-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border:2px solid var(--border);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:15px;background:#fff;opacity:0;transform:translateX(-8px);transition:all 0.35s;cursor:default;}
+  .subtask-item.vis{opacity:1;transform:translateX(0);}
+  .subtask-item.active-sub{border-color:var(--amber);background:var(--amber-dim);}
+  .subtask-item.done{opacity:0.4;}
+  .subtask-item.done .sub-check{color:var(--green);}
+  .sub-num{color:var(--grey);font-size:13px;min-width:26px;}
+  .sub-check{min-width:16px;font-size:16px;}
+  .sub-text{flex:1;font-size:15px;}
+  .sub-type{font-size:12px;padding:2px 8px;border-radius:10px;white-space:nowrap;}
+  .type-lang{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue);}
+  .type-code{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber);}
+  .progress-bar{width:100%;height:4px;background:var(--border);border-radius:2px;margin-top:12px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--green);border-radius:2px;transition:width 0.5s ease;}
+  .action-stream{display:flex;gap:7px;flex-wrap:wrap;min-height:50px;align-items:center;}
+  .action-chip{padding:6px 12px;border:2px solid var(--red);border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--red);background:var(--red-dim);opacity:0;transition:opacity 0.3s;}
+  .action-chip.vis{opacity:1;}
+  .action-chip.executing{animation:blink 0.6s ease-in-out infinite;border-color:var(--green);color:var(--green);background:var(--green-dim);}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.25}}
+  .explain{background:var(--surface);border:2px solid var(--border);border-left:5px solid var(--red);border-radius:6px;padding:18px 22px;margin-bottom:16px;}
+  .explain h3{font-size:18px;color:var(--red);font-family:'JetBrains Mono',monospace;margin-bottom:6px;}
+  .explain p{font-size:17px;line-height:1.65;color:var(--mid);}
+  .explain strong{color:var(--black);font-weight:700;}
+  .concept-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{padding:6px 16px;border:2px solid var(--border);border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--grey);}
+  .chip.red{border-color:var(--red);color:var(--red);}
+</style>
+</head>
+<body>
+<div class="tag">VLA Workshop - Component 04</div>
+<h1>Hierarchical Planning</h1>
+<p class="subtitle">One instruction. Many steps. See how a VLA model decomposes a complex goal into subtasks, then executes them one action at a time.</p>
+
+<div class="task-area">
+  <div class="task-lbl">Choose a task for the robot</div>
+  <div class="task-grid" id="taskGrid"></div>
+</div>
+
+<div class="ctrl-bar">
+  <button class="btn primary" id="runBtn" onclick="startExecution()">▶ Run Planner</button>
+  <button class="btn" onclick="reset()">↺ Reset</button>
+  <span class="status-txt" id="statusTxt">Select a task and press Run</span>
+</div>
+
+<div class="hierarchy">
+  <div class="level lv0">
+    <div class="level-header"><span class="level-badge">HIGH-LEVEL PLANNER — LLM</span><span class="level-title">User Instruction</span></div>
+    <div class="level-role">Receives the natural language command from the human</div>
+    <div id="instrDisplay" style="color:var(--grey);font-family:'JetBrains Mono',monospace;font-size:16px;">Select a task above</div>
+  </div>
+  <div class="level lv1">
+    <div class="level-header"><span class="level-badge">TASK DECOMPOSITION</span><span class="level-title">Subtask Plan</span></div>
+    <div class="level-role">LLM breaks the instruction into ordered, achievable steps</div>
+    <div class="subtask-list" id="subtaskList"><div style="color:#bbb;font-family:'JetBrains Mono',monospace;font-size:15px;">Press "Run Planner" to generate plan...</div></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+  <div class="level lv2">
+    <div class="level-header"><span class="level-badge">LOW-LEVEL CONTROLLER — VLA</span><span class="level-title">Action Stream</span></div>
+    <div class="level-role">Continuous motor commands sent to the robot at each timestep</div>
+    <div class="action-stream" id="actionStream"><span style="color:#bbb;font-family:'JetBrains Mono',monospace;font-size:15px;">Awaiting subtask...</span></div>
+  </div>
+</div>
+
+<div class="explain" id="explainBox">
+  <h3>Two levels of intelligence</h3>
+  <p>VLA models use a <strong>hierarchical architecture</strong>: a high-level planner (LLM) decomposes the goal into subtasks. A low-level VLA controller executes each subtask as a stream of motor commands. This mirrors human cognition: <strong>"clean the table"</strong> is high-level intent; <strong>moving arm 3cm left at 0.2m/s</strong> is low-level execution. Press Run to see it in action.</p>
+</div>
+
+<div class="concept-row">
+  <div class="chip red">High-level: SayCan, PaLM-E</div>
+  <div class="chip">Low-level: RT-1, RT-2, π₀</div>
+  <div class="chip">Emergent behaviour from composition</div>
+</div>
+
+<script>
+const tasks=[
+  {emoji:'🍳',name:'Cook breakfast',instruction:'"Cook me breakfast"',
+   subtasks:[
+     {text:'Locate fridge and egg carton',type:'lang',actions:['scan_scene()','navigate_to("fridge")','open_fridge()','grasp("eggs")']},
+     {text:'Pick up two eggs',type:'lang',actions:['count_objects("egg")','grasp_egg(1)','grasp_egg(2)','close_fridge()']},
+     {text:'Move to the hob',type:'code',actions:['navigate_to("hob")','avoid_obstacle()','reach_target()']},
+     {text:'Crack eggs into pan',type:'lang',actions:['position_arm()','crack_egg()','crack_egg()','adjust_grip()']},
+     {text:'Monitor cooking temperature',type:'code',actions:['read_sensor("heat")','adjust_hob(medium)','wait(120s)','check_state()']},
+   ],note:'Cooking requires reasoning about sequence, state, and physical affordances. The LLM understands "breakfast" culturally and breaks it into grounded steps. SayCan (Google) added a feasibility check: the LLM can only pick subtasks the robot is physically capable of doing.'},
+  {emoji:'🧹',name:'Clean the room',instruction:'"Clean the room"',
+   subtasks:[
+     {text:'Survey the room for mess',type:'lang',actions:['scan_360()','detect_objects()','prioritise_zones()']},
+     {text:'Pick up items from floor',type:'lang',actions:['navigate_to(item)','grasp(item)','place("bin")','repeat()']},
+     {text:'Wipe the table surface',type:'code',actions:['grasp("cloth")','navigate_to("table")','wipe_motion(x,y)','wipe_motion(x+1,y)']},
+     {text:'Straighten furniture',type:'lang',actions:['detect_misaligned()','push("chair")','adjust_angle()','verify_position()']},
+   ],note:'"Clean the room" is completely ambiguous to a traditional robot — but an LLM trained on human text understands what it implies. The high-level planner uses commonsense reasoning; the low-level controller handles precise spatial execution.'},
+  {emoji:'📦',name:'Pack the groceries',instruction:'"Put away the groceries"',
+   subtasks:[
+     {text:'Identify all grocery items',type:'code',actions:['scan_bag()','classify_item()','classify_item()','classify_item()']},
+     {text:'Open fridge door',type:'lang',actions:['navigate_to("fridge")','grasp_handle()','pull_open()','verify_open()']},
+     {text:'Place cold items in fridge',type:'lang',actions:['pick("milk")','place(fridge,shelf_2)','pick("yoghurt")','place(fridge,shelf_1)']},
+     {text:'Store dry goods in cupboard',type:'code',actions:['open_cupboard()','pick("pasta")','place(cupboard)','pick("rice")']},
+     {text:'Close fridge and cupboard',type:'lang',actions:['push_close("fridge")','verify_closed()','push_close("cupboard")']},
+   ],note:'This is the exact task demonstrated by Figure AI\'s Helix robot in 2025 — two robots collaborating to unpack groceries using a VLA model. The planner must understand categories (cold/dry), locations, and sequencing.'},
+  {emoji:'☕',name:'Make coffee',instruction:'"Make me a coffee"',
+   subtasks:[
+     {text:'Fill the kettle with water',type:'lang',actions:['grasp("kettle")','navigate_to("tap")','fill_kettle()','set_on_base()']},
+     {text:'Boil the kettle',type:'code',actions:['press_switch()','wait_until(100C)','monitor_state()']},
+     {text:'Place cup and add coffee',type:'lang',actions:['grasp("cup")','place("mat")','grasp("jar")','scoop_spoon()']},
+     {text:'Pour hot water carefully',type:'code',actions:['grasp_kettle()','tilt(45deg)','pour_stream()','set_down()']},
+     {text:'Add milk if requested',type:'lang',actions:['check_preference()','grasp("milk")','pour_splash()','stir()']},
+   ],note:'Notice "if requested" — the planner incorporates conditional logic and user preferences. Code-based planners give the low-level controller more precise affordance specifications, reducing execution errors.'},
+];
+
+let ct=0,state='idle',timers=[];
+
+function init(){
+  document.getElementById('taskGrid').innerHTML=tasks.map((t,i)=>`<button class="task-btn${i===0?' active':''}" onclick="selTask(${i})"><span class="task-emoji">${t.emoji}</span><span class="task-name">${t.name}</span><span class="task-desc">${t.instruction}</span></button>`).join('');
+  updateInstr();
+}
+function selTask(i){ct=i;document.querySelectorAll('.task-btn').forEach((b,j)=>b.classList.toggle('active',j===i));reset();updateInstr();}
+function updateInstr(){document.getElementById('instrDisplay').innerHTML=`<div class="instr-display">${tasks[ct].instruction}</div>`;}
+function reset(){
+  timers.forEach(clearTimeout);timers=[];state='idle';
+  document.getElementById('subtaskList').innerHTML=`<div style="color:#bbb;font-family:'JetBrains Mono',monospace;font-size:15px;">Press "Run Planner" to generate plan...</div>`;
+  document.getElementById('actionStream').innerHTML=`<span style="color:#bbb;font-family:'JetBrains Mono',monospace;font-size:15px;">Awaiting subtask...</span>`;
+  document.getElementById('progressFill').style.width='0%';
+  document.getElementById('statusTxt').textContent='Select a task and press Run';
+  document.getElementById('runBtn').textContent='▶ Run Planner';
+  setDefaultExplain();
+}
+function startExecution(){
+  if(state!=='idle'){reset();return;}
+  state='planning';
+  document.getElementById('runBtn').textContent='↺ Reset';
+  document.getElementById('statusTxt').textContent='Planning...';
+  const task=tasks[ct];
+  document.getElementById('subtaskList').innerHTML='';
+  task.subtasks.forEach((sub,i)=>{
+    const el=document.createElement('div');el.className='subtask-item';el.id=`sub-${i}`;
+    el.innerHTML=`<span class="sub-num">${String(i+1).padStart(2,'0')}</span><span class="sub-check">○</span><span class="sub-text">${sub.text}</span><span class="sub-type type-${sub.type}">${sub.type}</span>`;
+    document.getElementById('subtaskList').appendChild(el);
+    timers.push(setTimeout(()=>el.classList.add('vis'),i*200+80));
+  });
+  timers.push(setTimeout(()=>{state='running';document.getElementById('statusTxt').textContent='Plan ready — executing...';autoRun();},task.subtasks.length*200+400));
+}
+function autoRun(){
+  const task=tasks[ct];let delay=0;
+  task.subtasks.forEach((sub,si)=>{
+    timers.push(setTimeout(()=>activateSub(si),delay));delay+=380;
+    sub.actions.forEach((act,ai)=>{timers.push(setTimeout(()=>showAction(act,ai),delay));delay+=620;});
+    timers.push(setTimeout(()=>completeSub(si),delay));delay+=280;
+  });
+  timers.push(setTimeout(()=>{state='done';document.getElementById('statusTxt').textContent='✓ Task complete!';document.getElementById('progressFill').style.width='100%';},delay));
+}
+function activateSub(si){
+  const task=tasks[ct];
+  document.querySelectorAll('.subtask-item').forEach((el,j)=>el.classList.toggle('active-sub',j===si));
+  document.getElementById('actionStream').innerHTML=`<span style="color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:15px;">Executing: ${task.subtasks[si].text}...</span>`;
+  document.getElementById('progressFill').style.width=`${(si/task.subtasks.length)*100}%`;
+  document.getElementById('statusTxt').textContent=`Step ${si+1}/${task.subtasks.length}: ${task.subtasks[si].text}`;
+  document.getElementById('explainBox').innerHTML=`<h3>Executing step ${si+1}</h3><p><strong>"${task.subtasks[si].text}"</strong> — The high-level planner selected this subtask. The low-level VLA controller now receives this as its instruction and generates action tokens in real time, one motor command per timestep (typically 10-30Hz).<br><br>${task.note}</p>`;
+}
+function showAction(act,ai){
+  const stream=document.getElementById('actionStream');
+  if(ai===0)stream.innerHTML='';
+  const chip=document.createElement('div');chip.className='action-chip executing';chip.textContent=act;
+  stream.appendChild(chip);
+  setTimeout(()=>{chip.classList.remove('executing');chip.classList.add('vis');},380);
+}
+function completeSub(si){
+  const el=document.getElementById(`sub-${si}`);
+  if(el){el.classList.remove('active-sub');el.classList.add('done');el.querySelector('.sub-check').textContent='✓';}
+}
+function setDefaultExplain(){
+  document.getElementById('explainBox').innerHTML=`<h3>Two levels of intelligence</h3><p>VLA models use a <strong>hierarchical architecture</strong>: a high-level planner (LLM) decomposes the goal into subtasks. A low-level VLA controller executes each subtask as a stream of motor commands. This mirrors human cognition: <strong>"clean the table"</strong> is high-level intent; <strong>moving arm 3cm left at 0.2m/s</strong> is low-level execution. Press Run to see it in action.</p>`;
+}
+window.onload=init;
+</script>
+</body>
+</html>

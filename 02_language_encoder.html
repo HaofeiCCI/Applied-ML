@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Language Encoder</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+  :root {
+    --bg:#ffffff; --surface:#f5f5f5; --border:#d0d0d0;
+    --red:#c1121f; --red-dim:rgba(193,18,31,0.08);
+    --blue:#0077b6; --blue-dim:rgba(0,119,182,0.08);
+    --black:#111111; --grey:#666666; --mid:#333333;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--black);font-family:'Archivo',sans-serif;font-size:18px;padding:28px 32px;line-height:1.5;}
+  .tag{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:3px;color:var(--red);text-transform:uppercase;margin-bottom:6px;}
+  h1{font-size:44px;font-weight:900;line-height:1.05;margin-bottom:8px;}
+  .subtitle{font-size:18px;color:var(--grey);margin-bottom:24px;max-width:700px;line-height:1.6;}
+  .steps{display:flex;border:2px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:24px;}
+  .step-btn{flex:1;padding:12px 8px;background:none;border:none;border-right:2px solid var(--border);color:var(--grey);font-family:'JetBrains Mono',monospace;font-size:13px;cursor:pointer;transition:all 0.2s;text-align:center;line-height:1.3;}
+  .step-btn:last-child{border-right:none;}
+  .step-btn.active{background:var(--red);color:#fff;}
+  .step-btn:hover:not(.active){background:var(--surface);color:var(--black);}
+  .step-num{display:block;font-size:22px;font-weight:700;font-family:'Archivo',sans-serif;margin-bottom:2px;}
+  .instr-area{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:18px 20px;margin-bottom:18px;}
+  .instr-label{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;color:var(--grey);text-transform:uppercase;margin-bottom:10px;}
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .preset-btn{padding:8px 16px;border:2px solid var(--border);border-radius:20px;background:none;color:var(--grey);font-family:'JetBrains Mono',monospace;font-size:13px;cursor:pointer;transition:all 0.2s;}
+  .preset-btn.active{border-color:var(--red);color:var(--red);background:var(--red-dim);}
+  .preset-btn:hover:not(.active){border-color:#999;color:var(--black);}
+  .cur-instr{font-size:22px;font-weight:700;color:var(--black);}
+  .main-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+  @media(max-width:700px){.main-grid{grid-template-columns:1fr;}}
+  .panel{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:18px 20px;display:flex;flex-direction:column;}
+  .panel-label{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:2px;color:var(--grey);text-transform:uppercase;margin-bottom:12px;}
+  .word-token{display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border:2px solid var(--border);border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--black);background:#fff;cursor:pointer;margin:4px;transition:all 0.2s;position:relative;}
+  .word-token:hover,.word-token.selected{border-color:var(--red);background:var(--red-dim);color:var(--red);}
+  .tok-id{position:absolute;top:-11px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--grey);background:#fff;padding:0 3px;white-space:nowrap;font-family:'JetBrains Mono',monospace;}
+  .embed-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;opacity:0;transform:translateX(-6px);transition:all 0.35s;}
+  .embed-row.vis{opacity:1;transform:translateX(0);}
+  .embed-word{font-family:'JetBrains Mono',monospace;font-size:14px;min-width:80px;}
+  .embed-bars{flex:1;display:flex;gap:3px;}
+  .embed-bar{height:16px;border-radius:2px;min-width:3px;}
+  .embed-val{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--grey);min-width:70px;text-align:right;}
+  .attn-cell{border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:13px;cursor:pointer;transition:all 0.2s;}
+  .attn-cell:hover{transform:scale(1.08);outline:2px solid var(--black);}
+  .explain{background:var(--surface);border:2px solid var(--border);border-left:5px solid var(--red);border-radius:6px;padding:18px 22px;margin-bottom:16px;}
+  .explain h3{font-size:18px;color:var(--red);font-family:'JetBrains Mono',monospace;margin-bottom:6px;}
+  .explain p{font-size:17px;line-height:1.65;color:var(--mid);}
+  .explain strong{color:var(--black);font-weight:700;}
+  .concept-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .chip{padding:6px 16px;border:2px solid var(--border);border-radius:20px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--grey);}
+  .chip.red{border-color:var(--red);color:var(--red);}
+  .chip.blue{border-color:var(--blue);color:var(--blue);}
+  .controls{display:flex;gap:10px;}
+  .btn{padding:10px 24px;border:2px solid var(--border);border-radius:5px;background:none;color:var(--black);font-family:'JetBrains Mono',monospace;font-size:14px;cursor:pointer;transition:all 0.2s;}
+  .btn:hover{background:var(--surface);}
+  .btn.primary{background:var(--red);border-color:var(--red);color:#fff;}
+  .btn.primary:hover{background:#a00e19;}
+  @keyframes slideIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="tag">VLA Workshop - Component 02</div>
+<h1>Language Encoder</h1>
+<p class="subtitle">How a robot understands instructions - turning words into vectors that fuse with vision to drive action.</p>
+
+<div class="steps">
+  <button class="step-btn active" onclick="setStep(0)"><span class="step-num">1</span>Choose Instruction</button>
+  <button class="step-btn" onclick="setStep(1)"><span class="step-num">2</span>Tokenise</button>
+  <button class="step-btn" onclick="setStep(2)"><span class="step-num">3</span>Embed to Vectors</button>
+  <button class="step-btn" onclick="setStep(3)"><span class="step-num">4</span>Attention</button>
+</div>
+
+<div class="instr-area">
+  <div class="instr-label">Robot Instruction</div>
+  <div class="presets" id="presets"></div>
+  <div class="cur-instr" id="curInstr"></div>
+</div>
+
+<div class="main-grid">
+  <div class="panel"><div class="panel-label" id="leftLabel">-</div><div id="leftContent"></div></div>
+  <div class="panel"><div class="panel-label" id="rightLabel">-</div><div id="rightContent"></div></div>
+</div>
+
+<div class="explain" id="explainBox"><h3>What is happening?</h3><p>Choose an instruction above to explore how the Language Encoder works.</p></div>
+
+<div class="concept-row">
+  <div class="chip red">BERT / GPT backbone</div>
+  <div class="chip">Word → Token ID → Embedding</div>
+  <div class="chip blue">Self-attention across tokens</div>
+  <div class="chip">Output fused with vision</div>
+</div>
+
+<div class="controls">
+  <button class="btn" onclick="setStep(Math.max(0,currentStep-1))">← Previous</button>
+  <button class="btn primary" onclick="setStep(Math.min(3,currentStep+1))">Next Step →</button>
+</div>
+
+<script>
+const instrs=[
+  {text:'Pick up the red cup',tokens:['Pick','up','the','red','cup'],important:[3,4]},
+  {text:'Clean the table now',tokens:['Clean','the','table','now'],important:[0,2]},
+  {text:'Bring me the bottle',tokens:['Bring','me','the','bottle'],important:[0,3]},
+  {text:'Move left and stop',tokens:['Move','left','and','stop'],important:[0,1,3]},
+];
+let ci=0,currentStep=0;
+
+function init(){
+  document.getElementById('presets').innerHTML=instrs.map((ins,i)=>`<button class="preset-btn${i===0?' active':''}" onclick="selI(${i})">"${ins.text}"</button>`).join('');
+  document.getElementById('curInstr').textContent=`"${instrs[0].text}"`;
+  renderStep();
+}
+function selI(i){ci=i;document.querySelectorAll('.preset-btn').forEach((b,j)=>b.classList.toggle('active',j===i));document.getElementById('curInstr').textContent=`"${instrs[i].text}"`;renderStep();}
+function setStep(n){currentStep=n;document.querySelectorAll('.step-btn').forEach((b,i)=>b.classList.toggle('active',i===n));renderStep();}
+function renderStep(){[s0,s1,s2,s3][currentStep]();}
+
+function s0(){
+  document.getElementById('leftLabel').textContent='Raw Text';
+  document.getElementById('rightLabel').textContent='The Problem';
+  document.getElementById('leftContent').innerHTML=`<div style="font-size:24px;font-weight:700;margin-bottom:14px;">"${instrs[ci].text}"</div><p style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#aaa;">raw characters — meaningless to a neural network</p>`;
+  document.getElementById('rightContent').innerHTML=`<div style="display:flex;flex-direction:column;gap:12px;">${['Neural networks only process numbers','Words have no inherent numerical value','"red" and "cup" have a relationship — but how to encode it?','Solution: convert each word to a high-dimensional vector'].map((t,i)=>`<div style="display:flex;gap:12px;align-items:flex-start;opacity:0;animation:slideIn 0.4s ${i*0.1+0.1}s both ease;"><span style="color:${i===3?'var(--red)':'#ccc'};font-size:18px;min-width:20px;">${i===3?'✓':'✗'}</span><span style="font-size:17px;color:${i===3?'var(--black)':'var(--grey)'};line-height:1.5;">${t}</span></div>`).join('')}</div>`;
+  setExplain(0);
+}
+function s1(){
+  const ins=instrs[ci];
+  document.getElementById('leftLabel').textContent='Raw Text';
+  document.getElementById('rightLabel').textContent='Tokens and IDs';
+  const allToks=['[CLS]',...ins.tokens,'[SEP]'];
+  document.getElementById('leftContent').innerHTML=`<div style="font-size:20px;font-weight:600;color:#aaa;margin-bottom:14px;">"${ins.text}"</div><p style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#aaa;margin-bottom:10px;letter-spacing:1px;">SPLIT INTO TOKENS:</p><div style="display:flex;flex-wrap:wrap;">${allToks.map((w,i)=>`<div class="word-token" onclick="hlTok(${i},'${w}')"><span class="tok-id">${1000+i*17}</span>${w}</div>`).join('')}</div><p style="font-size:14px;color:#aaa;margin-top:12px;font-family:'JetBrains Mono',monospace;">click a token to inspect</p>`;
+  document.getElementById('rightContent').innerHTML=`<div id="tokDetail" style="font-family:'JetBrains Mono',monospace;font-size:15px;color:#aaa;padding-top:16px;">← click a token</div>`;
+  setExplain(1);
+}
+window.hlTok=function(i,word){
+  document.querySelectorAll('.word-token').forEach((t,j)=>t.classList.toggle('selected',j===i));
+  const spec={'[CLS]':'Special classification token added at the start. Its final vector represents the full sentence.','[SEP]':'Separator token — marks the end of the sequence.','up':'Directional modifier — affects the meaning of "Pick".','the':'Article — low semantic weight but needed for syntax.'};
+  const detail=spec[word]||`Content word with high semantic weight. The model has learned that "${word}" is associated with specific objects, actions, or attributes from billions of training examples.`;
+  const isImp=instrs[ci].important?.includes(i-1);
+  document.getElementById('tokDetail').innerHTML=`<div style="color:var(--red);font-size:22px;font-weight:700;margin-bottom:8px;">"${word}"</div><div style="margin-bottom:8px;font-size:16px;"><span style="color:#aaa">Token ID: </span><span style="color:var(--black);font-weight:700">${1000+i*17}</span></div><div style="font-size:16px;color:var(--mid);line-height:1.6;margin-bottom:10px;">${detail}</div>${isImp?`<div style="padding:7px 12px;background:var(--red-dim);border:2px solid var(--red);border-radius:5px;font-size:13px;color:var(--red);">HIGH SEMANTIC WEIGHT — key to understanding this instruction</div>`:''}`;
+};
+function s2(){
+  const ins=instrs[ci];const all=['[CLS]',...ins.tokens,'[SEP]'];
+  document.getElementById('leftLabel').textContent='Tokens';
+  document.getElementById('rightLabel').textContent='Embedding Vectors (512-dim)';
+  document.getElementById('leftContent').innerHTML=`<div style="display:flex;flex-direction:column;gap:8px;">${all.map((w,i)=>`<div style="padding:9px 14px;border:2px solid ${ins.important?.includes(i-1)?'var(--red)':'var(--border)'};border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:15px;color:${ins.important?.includes(i-1)?'var(--red)':'var(--mid)'};background:${ins.important?.includes(i-1)?'var(--red-dim)':'#fff'};display:flex;justify-content:space-between;opacity:0;animation:slideIn 0.3s ${i*0.07}s both ease;"><span>${w}</span><span style="color:#aaa;font-size:12px">ID ${1000+i*17}</span></div>`).join('')}</div>`;
+  const rc=document.getElementById('rightContent');rc.innerHTML='';
+  all.forEach((w,i)=>{
+    const row=document.createElement('div');row.className='embed-row';
+    const seed=ci*13+i*7;const vals=Array.from({length:10},(_,j)=>Math.abs(Math.sin(seed+j*2.1+i)));
+    const isImp=ins.important?.includes(i-1);
+    row.innerHTML=`<span class="embed-word" style="color:${isImp?'var(--red)':'var(--grey)'}">${w}</span><div class="embed-bars">${vals.map(v=>`<div class="embed-bar" style="width:${v*28+3}px;background:${isImp?'var(--red)':'#aaa'};opacity:${0.3+v*0.7};"></div>`).join('')}</div><span class="embed-val">[${vals.slice(0,2).map(v=>v.toFixed(2)).join(',')}...]</span>`;
+    rc.appendChild(row);setTimeout(()=>row.classList.add('vis'),i*75+40);
+  });
+  setExplain(2);
+}
+function s3(){
+  const ins=instrs[ci];const toks=ins.tokens;const n=toks.length;
+  document.getElementById('leftLabel').textContent='Self-Attention Matrix';
+  document.getElementById('rightLabel').textContent='What each word attends to';
+  function aw(i,j){const base=Math.abs(Math.sin((ci+1)*5+i*3.7+j*2.3));const imp=ins.important||[];const boost=(imp.includes(i)&&imp.includes(j))?0.4:0;const diag=i===j?0.5:0;return Math.min(1,base*0.6+boost+diag);}
+  const cs=Math.min(58,Math.floor(220/(n+1)));
+  let mat=`<div style="display:inline-grid;grid-template-columns:${cs}px ${Array(n).fill(`${cs}px`).join(' ')};gap:3px;">`;
+  mat+=`<div style="width:${cs}px;height:${cs}px;"></div>`;
+  toks.forEach(t=>{mat+=`<div style="width:${cs}px;height:${cs}px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12px;color:#888;writing-mode:vertical-lr;transform:rotate(180deg);">${t}</div>`;});
+  toks.forEach((rt,i)=>{
+    mat+=`<div style="width:${cs}px;height:${cs}px;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#888;">${rt}</div>`;
+    toks.forEach((_,j)=>{const w=aw(i,j);const al=Math.round(w*210).toString(16).padStart(2,'0');mat+=`<div class="attn-cell" style="width:${cs}px;height:${cs}px;background:#c1121f${al};" onclick="showAttn(${i},${j})">${w.toFixed(2)}</div>`;});
+  });
+  mat+='</div>';
+  document.getElementById('leftContent').innerHTML=mat+`<p style="margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#aaa;">darker = stronger attention; click a cell</p>`;
+  document.getElementById('rightContent').innerHTML=`<div id="attnDetail" style="font-family:'JetBrains Mono',monospace;font-size:15px;color:#aaa;">Click a cell in the matrix.</div>`;
+  window._toks=toks;window._aw=aw;
+  setExplain(3);
+}
+window.showAttn=function(i,j){
+  const toks=window._toks;const w=window._aw(i,j);const rel=w>0.7?'strong':w>0.4?'moderate':'weak';
+  document.getElementById('attnDetail').innerHTML=`<div style="margin-bottom:10px;"><span style="color:var(--red);font-size:20px;font-weight:700">"${toks[i]}"</span><span style="color:#aaa;margin:0 8px;">attends to</span><span style="color:var(--blue);font-size:20px;font-weight:700">"${toks[j]}"</span></div><div style="margin-bottom:10px;font-size:18px;">Weight: <span style="color:var(--red);font-weight:700">${w.toFixed(3)}</span> <span style="color:#aaa;font-size:14px">(${rel})</span></div><div style="font-size:16px;color:var(--mid);line-height:1.6;">${i===j?`<strong>Self-attention:</strong> Every token attends strongly to itself.`:w>0.6?`<strong>Strong link:</strong> The model learned these words are semantically connected.`:`<strong>Weak link:</strong> These words have little direct relationship in this context.`}</div>`;
+};
+const exps=[
+  {t:'Step 1 - The Problem with Text',p:'A robot receives instructions as raw text. But neural networks can only process <strong>numbers</strong>. The Language Encoder converts words into numerical vectors while <strong>preserving meaning</strong>. "Red cup" and "crimson mug" should end up as similar vectors.'},
+  {t:'Step 2 - Tokenisation',p:'The text is split into <strong>tokens</strong> - usually words or subwords. Each token gets a unique integer ID. Special tokens like <strong>[CLS]</strong> are added: the [CLS] token will hold the meaning of the entire sentence. This is the same concept as patch tokens in the Vision Encoder.'},
+  {t:'Step 3 - Embedding',p:'Each token ID is looked up in a learned <strong>embedding table</strong> - mapping IDs to 512 or 768-dimensional vectors. These are learned from billions of text examples. Words with similar meanings end up as similar vectors.'},
+  {t:'Step 4 - Self-Attention',p:'Every token attends to every other token. The attention matrix encodes <strong>which words matter for understanding which other words</strong>. For "Pick up the red cup", high attention flows from "cup" to "red". The final [CLS] vector encodes the full instruction, ready to fuse with the vision embedding.'},
+];
+function setExplain(i){document.getElementById('explainBox').innerHTML=`<h3>${exps[i].t}</h3><p>${exps[i].p}</p>`;}
+window.onload=init;
+</script>
+</body>
+</html>
